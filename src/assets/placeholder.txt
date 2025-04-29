@@ -1,0 +1,9 @@
+This directory is for static assets like images, icons, and other media files.
+
+In a production application, you would typically store images like:
+- Logo files
+- Farm imagery
+- Device icons
+- UI illustrations
+
+For local development, you can place your assets here and import them in your components.

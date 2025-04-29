@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -15,11 +15,11 @@ import {
   Chip,
   Tooltip,
   useTheme,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 
 const UserListPlaceholder = () => {
   const theme = useTheme();
@@ -27,9 +27,27 @@ const UserListPlaceholder = () => {
 
   // Mock users data
   const [users, setUsers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Manager', status: 'Active' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', status: 'Inactive' },
+    {
+      id: 1,
+      name: "John Doe",
+      email: "john@example.com",
+      role: "Admin",
+      status: "Active",
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      role: "Manager",
+      status: "Active",
+    },
+    {
+      id: 3,
+      name: "Bob Johnson",
+      email: "bob@example.com",
+      role: "User",
+      status: "Inactive",
+    },
   ]);
 
   const handleDelete = (id) => {
@@ -38,7 +56,14 @@ const UserListPlaceholder = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Typography variant="h4" component="h2">
           User Management
         </Typography>
@@ -46,22 +71,22 @@ const UserListPlaceholder = () => {
           variant="contained"
           color="primary"
           startIcon={<PersonAddIcon />}
-          onClick={() => navigate('/dashboard/users/create')}
+          onClick={() => navigate("/dashboard/users/create")}
         >
           Add User
         </Button>
       </Box>
 
-      <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, overflow: 'hidden' }}>
+      <Paper sx={{ width: "100%", mb: 2, borderRadius: 2, overflow: "hidden" }}>
         <TableContainer>
           <Table>
             <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Role</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -75,12 +100,15 @@ const UserListPlaceholder = () => {
                       size="small"
                       sx={{
                         backgroundColor:
-                          user.role === 'Admin'
+                          user.role === "Admin"
                             ? theme.palette.primary.main
-                            : user.role === 'Manager'
-                              ? theme.palette.info.main
-                              : theme.palette.secondary.main,
-                        color: user.role === 'User' ? theme.palette.primary.main : 'white',
+                            : user.role === "Manager"
+                            ? theme.palette.info.main
+                            : theme.palette.secondary.main,
+                        color:
+                          user.role === "User"
+                            ? theme.palette.primary.main
+                            : "white",
                       }}
                     />
                   </TableCell>
@@ -90,11 +118,11 @@ const UserListPlaceholder = () => {
                       size="small"
                       sx={{
                         backgroundColor:
-                          user.status === 'Active'
+                          user.status === "Active"
                             ? theme.palette.success.light
                             : theme.palette.error.light,
                         color:
-                          user.status === 'Active'
+                          user.status === "Active"
                             ? theme.palette.success.dark
                             : theme.palette.error.dark,
                       }}
@@ -105,13 +133,19 @@ const UserListPlaceholder = () => {
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => navigate(`/dashboard/users/edit/${user.id}`)}
+                        onClick={() =>
+                          navigate(`/dashboard/users/edit/${user.id}`)
+                        }
                       >
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                      <IconButton size="small" color="error" onClick={() => handleDelete(user.id)}>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(user.id)}
+                      >
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>

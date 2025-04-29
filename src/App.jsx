@@ -1,24 +1,24 @@
-import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Box } from "@mui/material";
 
 // Pages
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import NotFoundPage from './pages/NotFoundPage';
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleLogin = () => {
-    console.log('Handling login...');
+    console.log("Handling login...");
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
-    console.log('Handling logout...');
+    console.log("Handling logout...");
     setIsAuthenticated(false);
   };
 
@@ -30,7 +30,7 @@ function App() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
