@@ -1,11 +1,7 @@
-// File: src/pages/NotFoundPage.jsx
-
+// src/pages/NotFoundPage.jsx
 import { Link as RouterLink } from "react-router-dom";
-
 import { Box, Button, Container, Typography, useTheme } from "@mui/material";
-
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const NotFoundPage = () => {
@@ -16,17 +12,11 @@ const NotFoundPage = () => {
       <Box
         sx={{
           display: "flex",
-
           flexDirection: "column",
-
           alignItems: "center",
-
           justifyContent: "center",
-
           minHeight: "100vh",
-
           textAlign: "center",
-
           py: 5,
         }}
       >
@@ -53,14 +43,15 @@ const NotFoundPage = () => {
 
         <Button
           component={RouterLink}
-          to="/"
+          to="/dashboard"
           variant="contained"
           color="primary"
           size="large"
           startIcon={<ArrowBackIcon />}
           sx={{ py: 1.5, px: 4 }}
+          className="hover-effect"
         >
-          Back to Home
+          Back to Dashboard
         </Button>
       </Box>
     </Container>
