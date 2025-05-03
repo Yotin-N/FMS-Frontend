@@ -137,7 +137,7 @@ const AppRoutes = () => {
 
           {/* User Management Routes */}
           <Route
-            path="/dashboard/users"
+            path="/users"
             element={
               <ProtectedRoute>
                 <UserListPage />

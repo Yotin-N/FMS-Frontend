@@ -11,7 +11,6 @@ import {
   MenuItem,
   ListItemIcon,
   Avatar,
-  Button,
   Divider,
   useTheme,
   useMediaQuery,
@@ -20,10 +19,8 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  Badge,
 } from "@mui/material";
 import {
-  Menu as MenuIcon,
   Dashboard as DashboardIcon,
   Agriculture as AgricultureIcon,
   Devices as DevicesIcon,
@@ -34,13 +31,6 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import useAuth from "../../hooks/useAuth";
-
-// Main navigation items - defined outside component to avoid re-creating on render
-const mainNavItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-  { text: "Farms", icon: <AgricultureIcon />, path: "/farms" },
-  { text: "Devices", icon: <DevicesIcon />, path: "/devices" },
-];
 
 const Navbar = () => {
   const theme = useTheme();
@@ -76,22 +66,6 @@ const Navbar = () => {
   const closeDrawer = () => {
     setDrawerOpen(false);
   };
-
-  // Active link styling for NavLink
-  const navLinkStyles = ({ isActive }) => ({
-    borderRadius: 1,
-    mx: 1,
-    py: 1,
-    px: 1.5,
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: isActive ? theme.palette.secondary.light : "transparent",
-    color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
-    fontWeight: isActive ? 600 : 500,
-    "&:hover": {
-      backgroundColor: theme.palette.secondary.light,
-    },
-  });
 
   // Render the profile menu
   const renderProfileMenu = (
@@ -264,116 +238,77 @@ const Navbar = () => {
         </Box>
       )}
 
-      <List sx={{ px: 1 }}>
-        {mainNavItems.map((link) => (
-          <ListItem key={link.text} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              component={RouterLink}
-              to={link.path}
-              selected={location.pathname.startsWith(link.path)}
-              onClick={closeDrawer}
-              sx={{
-                borderRadius: 1,
-                backgroundColor: location.pathname.startsWith(link.path)
-                  ? theme.palette.secondary.light
-                  : "transparent",
-                color: location.pathname.startsWith(link.path)
-                  ? theme.palette.primary.main
-                  : "inherit",
-                "&:hover": {
-                  backgroundColor: theme.palette.secondary.light,
-                },
-              }}
-            >
-              {link.icon && (
+      {isAuthenticated && user?.role === "ADMIN" && (
+        <>
+          <List sx={{ px: 1 }}>
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component={RouterLink}
+                to="/dashboard/users"
+                selected={location.pathname.startsWith("/dashboard/users")}
+                onClick={closeDrawer}
+                sx={{
+                  borderRadius: 1,
+                  backgroundColor: location.pathname.startsWith(
+                    "/dashboard/users"
+                  )
+                    ? theme.palette.secondary.light
+                    : "transparent",
+                  color: location.pathname.startsWith("/dashboard/users")
+                    ? theme.palette.primary.main
+                    : "inherit",
+                  "&:hover": {
+                    backgroundColor: theme.palette.secondary.light,
+                  },
+                }}
+              >
                 <ListItemIcon
                   sx={{
-                    color: location.pathname.startsWith(link.path)
+                    color: location.pathname.startsWith("/dashboard/users")
                       ? theme.palette.primary.main
                       : "inherit",
                     minWidth: 40,
                   }}
                 >
-                  {link.icon}
-                </ListItemIcon>
-              )}
-              <ListItemText
-                primary={link.text}
-                primaryTypographyProps={{
-                  fontWeight: location.pathname.startsWith(link.path)
-                    ? 600
-                    : 500,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-
-        {isAuthenticated && user?.role === "ADMIN" && (
-          <ListItem disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              component={RouterLink}
-              to="/dashboard/users"
-              selected={location.pathname.startsWith("/dashboard/users")}
-              onClick={closeDrawer}
-              sx={{
-                borderRadius: 1,
-                backgroundColor: location.pathname.startsWith(
-                  "/dashboard/users"
-                )
-                  ? theme.palette.secondary.light
-                  : "transparent",
-                color: location.pathname.startsWith("/dashboard/users")
-                  ? theme.palette.primary.main
-                  : "inherit",
-                "&:hover": {
-                  backgroundColor: theme.palette.secondary.light,
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  color: location.pathname.startsWith("/dashboard/users")
-                    ? theme.palette.primary.main
-                    : "inherit",
-                  minWidth: 40,
-                }}
-              >
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="User Management"
-                primaryTypographyProps={{
-                  fontWeight: location.pathname.startsWith("/dashboard/users")
-                    ? 600
-                    : 500,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        )}
-      </List>
-
-      {isAuthenticated && (
-        <>
-          <Divider sx={{ my: 1 }} />
-          <List sx={{ px: 1 }}>
-            <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1 }}>
-                <ListItemIcon>
-                  <LogoutIcon color="error" />
+                  <PersonIcon />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Logout"
-                  primaryTypographyProps={{ color: "error" }}
+                  primary="User Management"
+                  primaryTypographyProps={{
+                    fontWeight: location.pathname.startsWith("/dashboard/users")
+                      ? 600
+                      : 500,
+                  }}
                 />
               </ListItemButton>
             </ListItem>
           </List>
+          <Divider sx={{ my: 1 }} />
         </>
+      )}
+
+      {isAuthenticated && (
+        <List sx={{ px: 1 }}>
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1 }}>
+              <ListItemIcon>
+                <LogoutIcon color="error" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Logout"
+                primaryTypographyProps={{ color: "error" }}
+              />
+            </ListItemButton>
+          </ListItem>
+        </List>
       )}
     </Drawer>
   );
+
+  // If not authenticated, don't render the navbar
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <AppBar
@@ -389,23 +324,8 @@ const Navbar = () => {
       }}
     >
       <Toolbar>
-        {/* Left Section */}
+        {/* Left Section - Logo */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          {/* Hamburger Menu - Show on mobile */}
-          {isMobile && (
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              onClick={toggleDrawer}
-              sx={{ mr: 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-
-          {/* Logo */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <AgricultureIcon
               sx={{
@@ -430,95 +350,35 @@ const Navbar = () => {
           </Box>
         </Box>
 
-        {/* Center/Right Section - Nav Links (Desktop Only) */}
-        {!isMobile && isAuthenticated && (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              ml: 4,
-            }}
-          >
-            {mainNavItems.map((link) => (
-              <Button
-                key={link.text}
-                component={NavLink}
-                to={link.path}
-                style={navLinkStyles}
-                startIcon={link.icon}
-              >
-                {link.text}
-              </Button>
-            ))}
-          </Box>
-        )}
-
         {/* Right Section - User Profile */}
-        {isAuthenticated ? (
-          <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-            {/* Notification Bell - Hide on very small screens */}
-            {!isMobile && (
-              <IconButton
-                size="medium"
-                color="inherit"
-                sx={{ ml: 1 }}
-                aria-label="notifications"
-              >
-                <Badge badgeContent={2} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            )}
-
-            {/* User Profile Avatar */}
-            <IconButton
-              onClick={handleProfileMenuOpen}
-              size="small"
-              edge="end"
-              aria-label="account of current user"
-              aria-controls="primary-user-menu"
-              aria-haspopup="true"
-              color="inherit"
-              sx={{ ml: 1 }}
+        <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+          {/* User Profile Avatar */}
+          <IconButton
+            onClick={handleProfileMenuOpen}
+            size="small"
+            edge="end"
+            aria-label="account of current user"
+            aria-controls="primary-user-menu"
+            aria-haspopup="true"
+            color="inherit"
+            sx={{ ml: 1 }}
+          >
+            <Avatar
+              sx={{
+                width: 35,
+                height: 35,
+                bgcolor: theme.palette.primary.main,
+                transition: "all 0.2s",
+                border: isMenuOpen
+                  ? `2px solid ${theme.palette.primary.main}`
+                  : "none",
+              }}
             >
-              <Avatar
-                sx={{
-                  width: 35,
-                  height: 35,
-                  bgcolor: theme.palette.primary.main,
-                  transition: "all 0.2s",
-                  border: isMenuOpen
-                    ? `2px solid ${theme.palette.primary.main}`
-                    : "none",
-                }}
-              >
-                {user?.firstName?.charAt(0).toUpperCase() || "U"}
-              </Avatar>
-            </IconButton>
-            {renderProfileMenu}
-          </Box>
-        ) : (
-          // Auth buttons for logged out users
-          <Box sx={{ marginLeft: "auto" }}>
-            <Button
-              component={RouterLink}
-              to="/login"
-              color="inherit"
-              sx={{ ml: 1 }}
-            >
-              Login
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/register"
-              variant="contained"
-              color="primary"
-              sx={{ ml: 1 }}
-            >
-              Register
-            </Button>
-          </Box>
-        )}
+              {user?.firstName?.charAt(0).toUpperCase() || "U"}
+            </Avatar>
+          </IconButton>
+          {renderProfileMenu}
+        </Box>
       </Toolbar>
       {renderMobileDrawer}
     </AppBar>

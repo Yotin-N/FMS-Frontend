@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/pages/dashboard/DashboardPage.jsx
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
@@ -33,7 +34,6 @@ import DeviceListPage from "../device/DeviceListPage";
 import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
-
 const drawerWidth = 240;
 
 const DashboardPage = () => {
@@ -72,8 +72,6 @@ const DashboardPage = () => {
     { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms" },
     { text: "Device Management", icon: <DevicesIcon />, path: "/devices" },
     { text: "User Management", icon: <PeopleIcon />, path: "/users" },
-    { text: "Analytics", icon: <BarChartIcon />, path: "/analytics" },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 
   // Dashboard overview content
@@ -256,7 +254,7 @@ const DashboardPage = () => {
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: "auto", mt: 2 }}>
+        <Box sx={{ overflow: "hidden" }}>
           <List>
             {menuItems.map((item, index) => (
               <ListItem
@@ -313,17 +311,6 @@ const DashboardPage = () => {
               </ListItem>
             ))}
           </List>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Box sx={{ p: 2, display: open ? "block" : "none" }}>
-            <Typography variant="body2" color="text.secondary">
-              Logged in as:
-            </Typography>
-            <Typography variant="body2" fontWeight="medium">
-              {user?.email || "User"}
-            </Typography>
-          </Box>
         </Box>
       </Drawer>
 

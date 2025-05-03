@@ -15,6 +15,7 @@ import {
   Divider,
   Alert,
   useTheme,
+  Dialog,
 } from "@mui/material";
 import {
   LockOutlined as LockOutlinedIcon,
@@ -103,7 +104,14 @@ const LoginPage = () => {
       if (result.success) {
         navigate("/dashboard");
       } else {
-        setError(result.message);
+        // Only update the error state of the input field
+        // No error message text is displayed to avoid layout shift
+        setValidationErrors({
+          email: " ", // Just set a space to trigger the error state
+          password: " ",
+        });
+        // Store the real error for the alert
+        setError(result.message || "Invalid credentials. Please try again.");
       }
     } catch (err) {
       setError("Login failed. Please try again.");
@@ -140,138 +148,139 @@ const LoginPage = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: theme.palette.secondary.light,
-        px: 2,
+        width: "100%",
+        overflow: "hidden", // Hide any overflows
+        p: 2,
+        backgroundColor: theme.palette.secondary.light, // Light background
       }}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          maxWidth: "sm",
-          width: "400px",
-          borderRadius: 2,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+      <Dialog
+        open={true}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          elevation: 8,
+          sx: {
+            borderRadius: 2,
+            overflow: "visible", // Allow animation effects
+            maxWidth: "400px",
+            mx: "auto",
+          },
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: theme.palette.primary.main }}>
-          <LockOutlinedIcon />
-        </Avatar>
-
-        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-          Sign in
-        </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
         <Box
-          component="form"
-          onSubmit={handleSubmit}
-          noValidate
-          sx={{ width: "100%" }}
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+          }}
         >
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={formData.email}
-            onChange={handleChange}
-            error={!!validationErrors.email}
-            helperText={validationErrors.email}
-          />
+          <Avatar sx={{ m: 1, bgcolor: theme.palette.primary.main }}>
+            <LockOutlinedIcon />
+          </Avatar>
 
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            id="password"
-            autoComplete="current-password"
-            value={formData.password}
-            onChange={handleChange}
-            error={!!validationErrors.password}
-            helperText={validationErrors.password}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={togglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+            Sign in
+          </Typography>
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2, py: 1.5 }}
-            disabled={isSubmitting}
-            className="hover-effect"
+          {error && (
+            <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{ width: "100%" }}
           >
-            {isSubmitting ? "Signing in..." : "Sign In"}
-          </Button>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={formData.email}
+              onChange={handleChange}
+              error={!!validationErrors.email}
+              helperText={
+                validationErrors.email && validationErrors.email !== " "
+                  ? validationErrors.email
+                  : ""
+              }
+            />
 
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              OR
-            </Typography>
-          </Divider>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              id="password"
+              autoComplete="current-password"
+              value={formData.password}
+              onChange={handleChange}
+              error={!!validationErrors.password}
+              helperText={
+                validationErrors.password && validationErrors.password !== " "
+                  ? validationErrors.password
+                  : ""
+              }
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={togglePasswordVisibility}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            onClick={handleGoogleLogin}
-            sx={{ mb: 2, py: 1.5 }}
-            className="hover-effect"
-          >
-            Sign in with Google
-          </Button>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={isSubmitting}
+              className="hover-effect"
+            >
+              {isSubmitting ? "Signing in..." : "Sign In"}
+            </Button>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Link
-                component={RouterLink}
-                to="/register"
-                variant="body2"
-                sx={{ color: theme.palette.primary.main }}
-              >
-                {"Don't have an account? Sign Up"}
-              </Link>
-            </Grid>
-
-            <Grid item xs={12} sm={6} sx={{ textAlign: { sm: "right" } }}>
-              <Link
-                href="#"
-                variant="body2"
-                sx={{ color: theme.palette.primary.main }}
-              >
-                Forgot password?
-              </Link>
-            </Grid>
-          </Grid>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={handleGoogleLogin}
+              sx={{ mb: 2, py: 1.5 }}
+              className="hover-effect"
+            >
+              Continue with Google
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/register"
+              fullWidth
+              variant="outlined"
+              sx={{ color: theme.palette.primary.main }}
+            >
+              Sign Up
+            </Button>
+          </Box>
         </Box>
-      </Paper>
+      </Dialog>
     </Box>
   );
 };

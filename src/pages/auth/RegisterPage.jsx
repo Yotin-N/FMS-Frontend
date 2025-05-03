@@ -1,4 +1,3 @@
-// src/pages/auth/RegisterPage.jsx
 import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
@@ -16,26 +15,27 @@ import {
   Step,
   StepLabel,
   Alert,
+  Collapse,
+  Fade,
+  CircularProgress,
   useTheme,
 } from "@mui/material";
 import {
   PersonAdd as PersonAddIcon,
   Visibility,
   VisibilityOff,
+  CheckCircleOutline,
 } from "@mui/icons-material";
 import useAuth from "../../hooks/useAuth";
 
-const steps = ["Account Details", "Personal Information"];
+const steps = ["Account Details", "Personal Info"];
 
 const RegisterPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  // Stepper state
   const [activeStep, setActiveStep] = useState(0);
-
-  // Form state
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -45,70 +45,40 @@ const RegisterPage = () => {
     phoneNumber: "",
   });
 
-  // UI state
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear validation error when field changes
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setValidationErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const validateStep = () => {
     const errors = {};
-
     if (activeStep === 0) {
-      // Email validation
-      if (!formData.email) {
-        errors.email = "Email is required";
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        errors.email = "Email is invalid";
-      }
+      if (!formData.email) errors.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(formData.email))
+        errors.email = "Invalid email";
 
-      // Password validation
-      if (!formData.password) {
-        errors.password = "Password is required";
-      } else if (formData.password.length < 8) {
-        errors.password = "Password must be at least 8 characters";
-      }
+      if (!formData.password) errors.password = "Password required";
+      else if (formData.password.length < 8)
+        errors.password = "Min 8 characters";
 
-      // Confirm password validation
-      if (!formData.confirmPassword) {
-        errors.confirmPassword = "Please confirm your password";
-      } else if (formData.password !== formData.confirmPassword) {
+      if (!formData.confirmPassword)
+        errors.confirmPassword = "Please confirm password";
+      else if (formData.confirmPassword !== formData.password)
         errors.confirmPassword = "Passwords do not match";
-      }
-    } else if (activeStep === 1) {
-      // First name validation
-      if (!formData.firstName) {
-        errors.firstName = "First name is required";
-      }
-
-      // Last name validation
-      if (!formData.lastName) {
-        errors.lastName = "Last name is required";
-      }
-
-      // Phone validation
-      if (!formData.phoneNumber) {
-        errors.phoneNumber = "Phone number is required";
-      } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
-        errors.phoneNumber = "Please enter a valid 10-digit phone number";
-      }
+    } else {
+      if (!formData.firstName) errors.firstName = "First name required";
+      if (!formData.lastName) errors.lastName = "Last name required";
+      if (!formData.phoneNumber) errors.phoneNumber = "Phone number required";
+      else if (!/^\d{10}$/.test(formData.phoneNumber))
+        errors.phoneNumber = "Invalid phone";
     }
 
     setValidationErrors(errors);
@@ -116,207 +86,37 @@ const RegisterPage = () => {
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setActiveStep((prev) => prev + 1);
-    }
+    if (validateStep()) setActiveStep((prev) => prev + 1);
   };
 
-  const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-  };
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateStep()) {
-      return;
-    }
+    if (!validateStep()) return;
 
     setIsSubmitting(true);
     setError("");
-
     try {
       const result = await register(formData);
-
       if (result.success) {
-        navigate("/login", {
-          state: { message: "Registration successful! Please log in." },
-        });
+        setSuccess(true);
+        setTimeout(
+          () =>
+            navigate("/login", {
+              state: { message: "Registration successful!" },
+            }),
+          2000
+        );
       } else {
-        setError(result.message);
+        setError(result.message || "Registration failed");
       }
-    } catch (err) {
-      setError("Registration failed. Please try again.");
-      console.error("Registration error:", err);
+    } catch {
+      setError("Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword((show) => !show);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword((show) => !show);
-  };
-
-  // Render account details form (step 0)
-  const renderAccountDetailsForm = () => (
-    <Box sx={{ width: "100%" }}>
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="email"
-        label="Email Address"
-        name="email"
-        autoComplete="email"
-        autoFocus
-        value={formData.email}
-        onChange={handleChange}
-        error={!!validationErrors.email}
-        helperText={validationErrors.email}
-      />
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="password"
-        label="Password"
-        type={showPassword ? "text" : "password"}
-        id="password"
-        autoComplete="new-password"
-        value={formData.password}
-        onChange={handleChange}
-        error={!!validationErrors.password}
-        helperText={validationErrors.password}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={togglePasswordVisibility}
-                edge="end"
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="confirmPassword"
-        label="Confirm Password"
-        type={showConfirmPassword ? "text" : "password"}
-        id="confirmPassword"
-        autoComplete="new-password"
-        value={formData.confirmPassword}
-        onChange={handleChange}
-        error={!!validationErrors.confirmPassword}
-        helperText={validationErrors.confirmPassword}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={toggleConfirmPasswordVisibility}
-                edge="end"
-              >
-                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleNext}
-          sx={{ py: 1.5, px: 3 }}
-          className="hover-effect"
-        >
-          Next
-        </Button>
-      </Box>
-    </Box>
-  );
-
-  // Render personal information form (step 1)
-  const renderPersonalInfoForm = () => (
-    <Box sx={{ width: "100%" }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            required
-            fullWidth
-            id="firstName"
-            label="First Name"
-            name="firstName"
-            autoComplete="given-name"
-            value={formData.firstName}
-            onChange={handleChange}
-            error={!!validationErrors.firstName}
-            helperText={validationErrors.firstName}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            required
-            fullWidth
-            id="lastName"
-            label="Last Name"
-            name="lastName"
-            autoComplete="family-name"
-            value={formData.lastName}
-            onChange={handleChange}
-            error={!!validationErrors.lastName}
-            helperText={validationErrors.lastName}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            required
-            fullWidth
-            id="phoneNumber"
-            label="Phone Number"
-            name="phoneNumber"
-            autoComplete="tel"
-            value={formData.phoneNumber}
-            onChange={handleChange}
-            error={!!validationErrors.phoneNumber}
-            helperText={validationErrors.phoneNumber}
-          />
-        </Grid>
-      </Grid>
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-        <Button onClick={handleBack} sx={{ py: 1.5, px: 3 }}>
-          Back
-        </Button>
-
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={isSubmitting}
-          sx={{ py: 1.5, px: 3 }}
-          className="hover-effect"
-        >
-          {isSubmitting ? "Registering..." : "Register"}
-        </Button>
-      </Box>
-    </Box>
-  );
 
   return (
     <Box
@@ -325,66 +125,187 @@ const RegisterPage = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: theme.palette.secondary.light,
-        px: 2,
+        backgroundColor: theme.palette.grey[100],
+        p: 2,
       }}
     >
       <Paper
-        elevation={3}
+        elevation={4}
         sx={{
           p: 4,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          maxWidth: "sm",
+          maxWidth: 480,
           width: "100%",
-          borderRadius: 2,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+          borderRadius: 3,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: theme.palette.primary.main }}>
-          <PersonAddIcon />
-        </Avatar>
+        <Box textAlign="center">
+          <Avatar
+            sx={{ bgcolor: theme.palette.primary.main, mx: "auto", mb: 1 }}
+          >
+            <PersonAddIcon />
+          </Avatar>
+          <Typography variant="h5" mb={2}>
+            Create Your Account
+          </Typography>
+        </Box>
 
-        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-          Create Account
-        </Typography>
+        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-        {error && (
-          <Alert severity="error" sx={{ width: "100%", mb: 3 }}>
+        <Collapse in={!!error}>
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
-        )}
+        </Collapse>
 
-        <Box sx={{ width: "100%", mb: 4 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Box>
+        <Collapse in={success}>
+          <Alert
+            icon={<CheckCircleOutline fontSize="inherit" />}
+            severity="success"
+            sx={{ mb: 2 }}
+          >
+            Registration Successful!
+          </Alert>
+        </Collapse>
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          noValidate
-          sx={{ mt: 1, width: "100%" }}
-        >
-          {activeStep === 0
-            ? renderAccountDetailsForm()
-            : renderPersonalInfoForm()}
-        </Box>
+        <form onSubmit={handleSubmit}>
+          {activeStep === 0 ? (
+            <>
+              <TextField
+                label="Email"
+                name="email"
+                fullWidth
+                margin="normal"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!validationErrors.email}
+                helperText={validationErrors.email}
+              />
+              <TextField
+                label="Password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                fullWidth
+                margin="normal"
+                value={formData.password}
+                onChange={handleChange}
+                error={!!validationErrors.password}
+                helperText={validationErrors.password}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((s) => !s)}>
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                label="Confirm Password"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                fullWidth
+                margin="normal"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                error={!!validationErrors.confirmPassword}
+                helperText={validationErrors.confirmPassword}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowConfirmPassword((s) => !s)}
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOff />
+                        ) : (
+                          <Visibility />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3 }}
+                onClick={handleNext}
+              >
+                Next
+              </Button>
+            </>
+          ) : (
+            <>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="First Name"
+                    name="firstName"
+                    fullWidth
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    error={!!validationErrors.firstName}
+                    helperText={validationErrors.firstName}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Last Name"
+                    name="lastName"
+                    fullWidth
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    error={!!validationErrors.lastName}
+                    helperText={validationErrors.lastName}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Phone Number"
+                    name="phoneNumber"
+                    fullWidth
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
+                    error={!!validationErrors.phoneNumber}
+                    helperText={validationErrors.phoneNumber}
+                  />
+                </Grid>
+              </Grid>
 
-        <Box sx={{ mt: 3, width: "100%", textAlign: "center" }}>
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}
+              >
+                <Button onClick={handleBack}>Back</Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={isSubmitting || success}
+                  endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                >
+                  {isSubmitting ? "Registering..." : "Register"}
+                </Button>
+              </Box>
+            </>
+          )}
+        </form>
+
+        <Box mt={4} textAlign="center">
           <Link
             component={RouterLink}
             to="/login"
             variant="body2"
-            sx={{ color: theme.palette.primary.main }}
+            underline="hover"
           >
-            Already have an account? Sign in
+            ← Back to Sign In
           </Link>
         </Box>
       </Paper>
