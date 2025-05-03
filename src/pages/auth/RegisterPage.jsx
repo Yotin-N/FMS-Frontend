@@ -1,3 +1,4 @@
+// src/pages/auth/RegisterPage.jsx - Updated version
 import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
@@ -7,8 +8,6 @@ import {
   TextField,
   Typography,
   Link,
-  Paper,
-  Grid,
   InputAdornment,
   IconButton,
   Stepper,
@@ -19,6 +18,8 @@ import {
   Fade,
   CircularProgress,
   useTheme,
+  Dialog,
+  DialogContent,
 } from "@mui/material";
 import {
   PersonAdd as PersonAddIcon,
@@ -125,190 +126,206 @@ const RegisterPage = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundColor: theme.palette.grey[100],
+        width: "100%",
+        overflow: "hidden",
         p: 2,
+        backgroundColor: theme.palette.secondary.light,
       }}
     >
-      <Paper
-        elevation={4}
-        sx={{
-          p: 4,
-          maxWidth: 480,
-          width: "100%",
-          borderRadius: 3,
-          position: "relative",
-          overflow: "hidden",
+      <Dialog
+        open={true}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          elevation: 8,
+          sx: {
+            borderRadius: 2,
+            overflow: "visible",
+            maxWidth: "400px",
+            mx: "auto",
+          },
         }}
       >
-        <Box textAlign="center">
-          <Avatar
-            sx={{ bgcolor: theme.palette.primary.main, mx: "auto", mb: 1 }}
-          >
+        <Box
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <Avatar sx={{ bgcolor: theme.palette.primary.main, mb: 1 }}>
             <PersonAddIcon />
           </Avatar>
           <Typography variant="h5" mb={2}>
             Create Your Account
           </Typography>
-        </Box>
 
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-
-        <Collapse in={!!error}>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        </Collapse>
-
-        <Collapse in={success}>
-          <Alert
-            icon={<CheckCircleOutline fontSize="inherit" />}
-            severity="success"
-            sx={{ mb: 2 }}
+          <Stepper
+            activeStep={activeStep}
+            alternativeLabel
+            sx={{ mb: 3, width: "100%" }}
           >
-            Registration Successful!
-          </Alert>
-        </Collapse>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
 
-        <form onSubmit={handleSubmit}>
-          {activeStep === 0 ? (
-            <>
-              <TextField
-                label="Email"
-                name="email"
-                fullWidth
-                margin="normal"
-                value={formData.email}
-                onChange={handleChange}
-                error={!!validationErrors.email}
-                helperText={validationErrors.email}
-              />
-              <TextField
-                label="Password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                fullWidth
-                margin="normal"
-                value={formData.password}
-                onChange={handleChange}
-                error={!!validationErrors.password}
-                helperText={validationErrors.password}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword((s) => !s)}>
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                label="Confirm Password"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                fullWidth
-                margin="normal"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                error={!!validationErrors.confirmPassword}
-                helperText={validationErrors.confirmPassword}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword((s) => !s)}
-                      >
-                        {showConfirmPassword ? (
-                          <VisibilityOff />
-                        ) : (
-                          <Visibility />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3 }}
-                onClick={handleNext}
-              >
-                Next
-              </Button>
-            </>
-          ) : (
-            <>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="First Name"
-                    name="firstName"
-                    fullWidth
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    error={!!validationErrors.firstName}
-                    helperText={validationErrors.firstName}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Last Name"
-                    name="lastName"
-                    fullWidth
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    error={!!validationErrors.lastName}
-                    helperText={validationErrors.lastName}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Phone Number"
-                    name="phoneNumber"
-                    fullWidth
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                    error={!!validationErrors.phoneNumber}
-                    helperText={validationErrors.phoneNumber}
-                  />
-                </Grid>
-              </Grid>
+          <Collapse in={!!error}>
+            <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
+              {error}
+            </Alert>
+          </Collapse>
 
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}
-              >
-                <Button onClick={handleBack}>Back</Button>
+          <Collapse in={success}>
+            <Alert
+              icon={<CheckCircleOutline fontSize="inherit" />}
+              severity="success"
+              sx={{ mb: 2, width: "100%" }}
+            >
+              Registration Successful!
+            </Alert>
+          </Collapse>
+
+          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+            {activeStep === 0 ? (
+              <>
+                <TextField
+                  label="Email"
+                  name="email"
+                  fullWidth
+                  margin="normal"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={!!validationErrors.email}
+                  helperText={validationErrors.email}
+                />
+                <TextField
+                  label="Password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  fullWidth
+                  margin="normal"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={!!validationErrors.password}
+                  helperText={validationErrors.password}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword((s) => !s)}>
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  fullWidth
+                  margin="normal"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  error={!!validationErrors.confirmPassword}
+                  helperText={validationErrors.confirmPassword}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword((s) => !s)}
+                        >
+                          {showConfirmPassword ? (
+                            <VisibilityOff />
+                          ) : (
+                            <Visibility />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
                 <Button
-                  type="submit"
+                  fullWidth
                   variant="contained"
-                  disabled={isSubmitting || success}
-                  endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                  sx={{ mt: 3 }}
+                  onClick={handleNext}
                 >
-                  {isSubmitting ? "Registering..." : "Register"}
+                  Next
                 </Button>
-              </Box>
-            </>
-          )}
-        </form>
+              </>
+            ) : (
+              <>
+                <TextField
+                  label="First Name"
+                  name="firstName"
+                  fullWidth
+                  margin="normal"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  error={!!validationErrors.firstName}
+                  helperText={validationErrors.firstName}
+                />
+                <TextField
+                  label="Last Name"
+                  name="lastName"
+                  fullWidth
+                  margin="normal"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  error={!!validationErrors.lastName}
+                  helperText={validationErrors.lastName}
+                />
+                <TextField
+                  label="Phone Number"
+                  name="phoneNumber"
+                  fullWidth
+                  margin="normal"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  error={!!validationErrors.phoneNumber}
+                  helperText={validationErrors.phoneNumber}
+                />
 
-        <Box mt={4} textAlign="center">
-          <Link
-            component={RouterLink}
-            to="/login"
-            variant="body2"
-            underline="hover"
-          >
-            ← Back to Sign In
-          </Link>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mt: 3,
+                  }}
+                >
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={isSubmitting || success}
+                    endIcon={
+                      isSubmitting ? <CircularProgress size={20} /> : null
+                    }
+                  >
+                    {isSubmitting ? "Registering..." : "Register"}
+                  </Button>
+                </Box>
+              </>
+            )}
+          </form>
+
+          <Box mt={4} textAlign="center">
+            <Link
+              component={RouterLink}
+              to="/login"
+              variant="body2"
+              underline="hover"
+            >
+              ← Back to Sign In
+            </Link>
+          </Box>
         </Box>
-      </Paper>
+      </Dialog>
     </Box>
   );
 };

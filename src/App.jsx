@@ -184,7 +184,7 @@ const App = () => {
             component="main"
             sx={{
               flexGrow: 1,
-              pt: { xs: "56px", sm: "64px" }, // Adjust based on navbar height
+              paddingTop: 0,
               minHeight: "100vh",
               display: "flex",
               flexDirection: "column",

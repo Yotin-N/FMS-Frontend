@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/components/farm/members/FarmMembersDialog.jsx
 import { useState, useEffect } from "react";
 import {

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 // src/pages/farm/FarmListPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,12 +5,16 @@ import {
   Box,
   Typography,
   Button,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  TextField,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   IconButton,
+  TextField,
+  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,10 +24,7 @@ import {
   Snackbar,
   Alert,
   Tooltip,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  InputAdornment,
+  Chip,
   Stack,
   useTheme,
   useMediaQuery,
@@ -33,11 +33,10 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
   Search as SearchIcon,
   People as PeopleIcon,
-  Room as RoomIcon,
-  ArrowForward as ArrowForwardIcon,
+  DevicesOther as DevicesIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import {
   getFarms,
@@ -54,7 +53,6 @@ const FarmListPage = () => {
 
   // Responsive breakpoints
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const isMediumScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // State
   const [farms, setFarms] = useState([]);
@@ -71,10 +69,6 @@ const FarmListPage = () => {
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState(null);
 
-  // Menu state
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [menuFarmId, setMenuFarmId] = useState(null);
-
   // Load farms on component mount
   useEffect(() => {
     loadFarms();
@@ -88,8 +82,8 @@ const FarmListPage = () => {
       const filtered = farms.filter(
         (farm) =>
           farm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (farm.location &&
-            farm.location.toLowerCase().includes(searchQuery.toLowerCase()))
+          (farm.description &&
+            farm.description.toLowerCase().includes(searchQuery.toLowerCase()))
       );
       setFilteredFarms(filtered);
     }
@@ -102,8 +96,13 @@ const FarmListPage = () => {
 
     try {
       const response = await getFarms();
-      setFarms(response.data || []);
-      setFilteredFarms(response.data || []);
+      // Add mock device count to each farm
+      const farmsWithDeviceCount = (response.data || []).map((farm) => ({
+        ...farm,
+        deviceCount: Math.floor(Math.random() * 10),
+      }));
+      setFarms(farmsWithDeviceCount);
+      setFilteredFarms(farmsWithDeviceCount);
     } catch (err) {
       console.error("Error loading farms:", err);
       setError("Failed to load farms. Please try again.");
@@ -167,42 +166,38 @@ const FarmListPage = () => {
     }
   };
 
+  // Format date string to display in a readable format
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   // Handle search input change
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
-  };
-
-  // Open the farm menu
-  const handleMenuOpen = (event, farmId) => {
-    setMenuAnchorEl(event.currentTarget);
-    setMenuFarmId(farmId);
-  };
-
-  // Close the farm menu
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-    setMenuFarmId(null);
   };
 
   // Open the edit dialog
   const handleEditClick = (farm) => {
     setSelectedFarm(farm);
     setEditDialogOpen(true);
-    handleMenuClose();
   };
 
   // Open the delete dialog
   const handleDeleteClick = (farm) => {
     setSelectedFarm(farm);
     setDeleteDialogOpen(true);
-    handleMenuClose();
   };
 
   // Open the members dialog
   const handleMembersClick = (farm) => {
     setSelectedFarm(farm);
     setMembersDialogOpen(true);
-    handleMenuClose();
   };
 
   // Navigate to devices for a specific farm
@@ -253,6 +248,7 @@ const FarmListPage = () => {
               minWidth: { sm: "200px" },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1,
+                height: 40,
               },
             }}
             InputProps={{
@@ -272,7 +268,7 @@ const FarmListPage = () => {
             sx={{
               whiteSpace: "nowrap",
               flexShrink: 0,
-              height: "40px",
+              height: 40,
             }}
           >
             Add Farm
@@ -313,189 +309,118 @@ const FarmListPage = () => {
         </Alert>
       </Snackbar>
 
-      {/* Farms Grid */}
-      {filteredFarms.length === 0 && !isLoading ? (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            py: 8,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            color="text.secondary"
-            gutterBottom
-            align="center"
-          >
-            {searchQuery ? "No farms match your search" : "No farms found"}
-          </Typography>
-
-          {!searchQuery && (
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{ mt: 2 }}
-            >
-              Add Your First Farm
-            </Button>
-          )}
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredFarms.map((farm) => (
-            <Grid item key={farm.id} xs={12} sm={6} lg={4}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                  transition: "all 0.3s ease",
-                  borderRadius: 2,
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-                  },
-                }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleMenuOpen(e, farm.id)}
-                  sx={{ position: "absolute", top: 8, right: 8 }}
-                >
-                  <MoreVertIcon />
-                </IconButton>
-
-                <CardContent sx={{ flexGrow: 1, pt: 3 }}>
-                  <Typography
-                    variant="h5"
-                    component="h2"
-                    gutterBottom
-                    noWrap
-                    sx={{
-                      pr: 4,
-                      fontSize: { xs: "1.25rem", sm: "1.5rem" },
-                    }}
-                  >
-                    {farm.name}
-                  </Typography>
-
-                  {farm.location && (
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <RoomIcon
-                        fontSize="small"
-                        color="action"
-                        sx={{ mr: 0.5, flexShrink: 0 }}
-                      />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        noWrap
-                        sx={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {farm.location}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                    <PeopleIcon
-                      fontSize="small"
-                      color="action"
-                      sx={{ mr: 0.5, flexShrink: 0 }}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {farm.members?.length || 1}{" "}
-                      {farm.members?.length === 1 ? "Member" : "Members"}
-                    </Typography>
-                  </Box>
-
-                  {farm.description && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mt: 2,
-                        display: "-webkit-box",
-                        overflow: "hidden",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 3,
-                      }}
-                    >
-                      {farm.description}
-                    </Typography>
-                  )}
-                </CardContent>
-
-                <CardActions sx={{ p: 2, pt: 0, justifyContent: "flex-end" }}>
-                  <Button
-                    size="small"
-                    endIcon={<ArrowForwardIcon />}
-                    onClick={() => handleViewDevices(farm.id)}
-                  >
-                    View Devices
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {/* Farm Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          elevation: 3,
-          sx: { width: 200 },
+      {/* Farms Table */}
+      <Paper
+        sx={{
+          width: "100%",
+          mb: 2,
+          borderRadius: 2,
+          overflow: "hidden",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
         }}
       >
-        <MenuItem
-          onClick={() =>
-            handleEditClick(farms.find((f) => f.id === menuFarmId))
-          }
-        >
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          Edit Farm
-        </MenuItem>
-
-        <MenuItem
-          onClick={() =>
-            handleMembersClick(farms.find((f) => f.id === menuFarmId))
-          }
-        >
-          <ListItemIcon>
-            <PeopleIcon fontSize="small" />
-          </ListItemIcon>
-          Manage Members
-        </MenuItem>
-
-        <MenuItem
-          onClick={() =>
-            handleDeleteClick(farms.find((f) => f.id === menuFarmId))
-          }
-          sx={{ color: theme.palette.error.main }}
-        >
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          Delete Farm
-        </MenuItem>
-      </Menu>
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: "bold" }}>Farm Name</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Plan Name</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Create Date</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Devices</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading && filteredFarms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">Loading farms...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : filteredFarms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      {searchQuery
+                        ? "No farms match your search"
+                        : "No farms found"}
+                    </Typography>
+                    {!searchQuery && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={() => setCreateDialogOpen(true)}
+                        sx={{ mt: 2 }}
+                      >
+                        Add Your First Farm
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredFarms.map((farm) => (
+                  <TableRow key={farm.id} hover>
+                    <TableCell>{farm.name}</TableCell>
+                    <TableCell>{farm.description || "-"}</TableCell>
+                    <TableCell>{formatDate(farm.createdAt)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={<DevicesIcon style={{ fontSize: 16 }} />}
+                        label={`${farm.deviceCount || 0} Devices`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ fontWeight: 400 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Tooltip title="View Devices">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewDevices(farm.id)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Manage Members">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleMembersClick(farm)}
+                          >
+                            <PeopleIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditClick(farm)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(farm)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Create Farm Dialog */}
       <Dialog

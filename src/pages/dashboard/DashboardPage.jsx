@@ -320,6 +320,7 @@ const DashboardPage = () => {
         sx={{
           flexGrow: 1,
           p: 3,
+          pt: 0,
           backgroundColor: theme.palette.grey[50],
           minHeight: "100vh",
         }}
