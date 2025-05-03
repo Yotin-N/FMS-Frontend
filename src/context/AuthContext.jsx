@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -65,11 +64,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setIsLoading(true);
     try {
-      // Make sure we don't store raw passwords in state
-      // Only send password to the backend for registration
-      const { password, ...safeUserData } = userData;
-
-      // Send all data to backend for registration
+      // Call the registerUser function from api.js
+      // This now correctly formats the data for the backend
       await registerUser(userData);
 
       setIsLoading(false);
@@ -96,6 +92,7 @@ export const AuthProvider = ({ children }) => {
   // Method to update the user data (used after successful OAuth)
   const updateUserData = (userData) => {
     // Make sure we don't store sensitive data
+    // eslint-disable-next-line no-unused-vars
     const { password, ...safeUserData } = userData;
 
     setUser(safeUserData);

@@ -15,11 +15,6 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   LinearProgress,
   Snackbar,
   Alert,
@@ -44,7 +39,8 @@ import {
   updateFarm,
   deleteFarm,
 } from "../../services/api";
-import FarmForm from "../../components/farm/FarmForm";
+import FarmDialog from "../../components/farm/FarmDialog";
+import DeleteFarmDialog from "../../components/farm/DeleteFarmDialog";
 import FarmMembersDialog from "../../components/farm/members/FarmMembersDialog";
 
 const FarmListPage = () => {
@@ -96,13 +92,21 @@ const FarmListPage = () => {
 
     try {
       const response = await getFarms();
-      // Add mock device count to each farm
-      const farmsWithDeviceCount = (response.data || []).map((farm) => ({
+
+      // Make sure we have the data in the expected format
+      const farmsData = response.data || [];
+
+      // Process the farms to ensure members and devices properties exist
+      const processedFarms = farmsData.map((farm) => ({
         ...farm,
-        deviceCount: Math.floor(Math.random() * 10),
+        // Ensure members property exists
+        members: farm.members || [],
+        // Ensure devices property exists
+        devices: farm.devices || [],
       }));
-      setFarms(farmsWithDeviceCount);
-      setFilteredFarms(farmsWithDeviceCount);
+
+      setFarms(processedFarms);
+      setFilteredFarms(processedFarms);
     } catch (err) {
       console.error("Error loading farms:", err);
       setError("Failed to load farms. Please try again.");
@@ -224,7 +228,7 @@ const FarmListPage = () => {
         spacing={2}
         sx={{ mb: 3 }}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Farm Management
         </Typography>
 
@@ -237,7 +241,7 @@ const FarmListPage = () => {
           <TextField
             placeholder="Search farms..."
             variant="outlined"
-            size="medium"
+            size="small"
             fullWidth={isSmallScreen}
             value={searchQuery}
             onChange={handleSearchChange}
@@ -248,7 +252,6 @@ const FarmListPage = () => {
               minWidth: { sm: "200px" },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1,
-                height: 40,
               },
             }}
             InputProps={{
@@ -268,7 +271,15 @@ const FarmListPage = () => {
             sx={{
               whiteSpace: "nowrap",
               flexShrink: 0,
-              height: 40,
+              borderRadius: 1,
+              textTransform: "none",
+              fontWeight: 500,
+              boxShadow: "none",
+              px: 2,
+              py: 1,
+              "&:hover": {
+                boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+              },
             }}
           >
             Add Farm
@@ -316,58 +327,84 @@ const FarmListPage = () => {
           mb: 2,
           borderRadius: 2,
           overflow: "hidden",
-          boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
         <TableContainer>
           <Table>
             <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: "bold" }}>Farm Name</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Plan Name</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Create Date</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Devices</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Farm Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Members</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Devices</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading && filteredFarms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1">Loading farms...</Typography>
                   </TableCell>
                 </TableRow>
               ) : filteredFarms.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body1" color="text.secondary">
-                      {searchQuery
-                        ? "No farms match your search"
-                        : "No farms found"}
-                    </Typography>
-                    {!searchQuery && (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddIcon />}
-                        onClick={() => setCreateDialogOpen(true)}
-                        sx={{ mt: 2 }}
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Box sx={{ textAlign: "center" }}>
+                      <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
                       >
-                        Add Your First Farm
-                      </Button>
-                    )}
+                        {searchQuery
+                          ? "No farms match your search"
+                          : "No farms found"}
+                      </Typography>
+                      {!searchQuery && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          startIcon={<AddIcon />}
+                          onClick={() => setCreateDialogOpen(true)}
+                          sx={{
+                            borderRadius: 1,
+                            textTransform: "none",
+                            fontWeight: 500,
+                            boxShadow: "none",
+                            "&:hover": {
+                              boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                            },
+                          }}
+                        >
+                          Add Your First Farm
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredFarms.map((farm) => (
                   <TableRow key={farm.id} hover>
-                    <TableCell>{farm.name}</TableCell>
+                    <TableCell>
+                      <Typography fontWeight={500}>{farm.name}</Typography>
+                    </TableCell>
                     <TableCell>{farm.description || "-"}</TableCell>
                     <TableCell>{formatDate(farm.createdAt)}</TableCell>
                     <TableCell>
                       <Chip
+                        icon={<PeopleIcon style={{ fontSize: 16 }} />}
+                        label={`${farm.members?.length || 0} Members`}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 400 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
                         icon={<DevicesIcon style={{ fontSize: 16 }} />}
-                        label={`${farm.deviceCount || 0} Devices`}
+                        label={`${farm.devices?.length || 0} Devices`}
                         size="small"
                         color="primary"
                         variant="outlined"
@@ -422,85 +459,35 @@ const FarmListPage = () => {
         </TableContainer>
       </Paper>
 
+      {/* Farm Dialogs */}
       {/* Create Farm Dialog */}
-      <Dialog
+      <FarmDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          elevation: 5,
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle>Add New Farm</DialogTitle>
-        <DialogContent dividers>
-          <FarmForm
-            onSubmit={handleCreateFarm}
-            onCancel={() => setCreateDialogOpen(false)}
-            isLoading={isLoading}
-          />
-        </DialogContent>
-      </Dialog>
+        onSubmit={handleCreateFarm}
+        isLoading={isLoading}
+        title="Add New Farm"
+      />
 
       {/* Edit Farm Dialog */}
-      <Dialog
+      <FarmDialog
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          elevation: 5,
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle>Edit Farm</DialogTitle>
-        <DialogContent dividers>
-          {selectedFarm && (
-            <FarmForm
-              initialData={selectedFarm}
-              onSubmit={handleUpdateFarm}
-              onCancel={() => setEditDialogOpen(false)}
-              isLoading={isLoading}
-              isEdit
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        onSubmit={handleUpdateFarm}
+        initialData={selectedFarm || {}}
+        isLoading={isLoading}
+        isEdit={true}
+        title="Edit Farm"
+      />
 
       {/* Delete Farm Dialog */}
-      <Dialog
+      <DeleteFarmDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{
-          elevation: 5,
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle>Delete Farm</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete "{selectedFarm?.name}"? This action
-            cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteFarm}
-            color="error"
-            variant="contained"
-            disabled={isLoading}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDeleteFarm}
+        farmName={selectedFarm?.name || ""}
+        isLoading={isLoading}
+      />
 
       {/* Farm Members Dialog */}
       {selectedFarm && (

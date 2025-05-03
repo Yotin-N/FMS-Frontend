@@ -2,7 +2,8 @@
 import axios from "axios";
 
 // Create an axios instance with defaults
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -45,7 +46,17 @@ export const loginUser = async (credentials) => {
 
 export const registerUser = async (userData) => {
   try {
-    const response = await api.post("/auth/register", userData);
+    // Transform the user data to match the backend expectations
+    const registerData = {
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      password: userData.password,
+      // Omit confirmPassword as it's not needed on the backend
+    };
+
+    // Send registration request directly to the users/register endpoint
+    const response = await api.post("/users/register", registerData);
     return response.data;
   } catch (error) {
     console.error("Registration error:", error);
@@ -53,10 +64,82 @@ export const registerUser = async (userData) => {
   }
 };
 
-// Farm API calls
+export const getFarms = async () => {
+  try {
+    // Explicitly include relationships in the request if your API supports it
+    // Use your API's specific query parameter format
+    const response = await api.get("/farms/my-farms");
+
+    // Process the response based on your API's actual structure
+    // This structure should match what your API returns
+    let farms = [];
+
+    // Check the actual structure of your API response
+    if (response.data && response.data.data) {
+      farms = response.data.data;
+    } else if (Array.isArray(response.data)) {
+      farms = response.data;
+    } else {
+      farms = []; // Fallback to empty array if unexpected structure
+    }
+
+    // For debugging, log the actual structure
+    console.log("API Farm Response:", response.data);
+
+    // Ensure we have placeholders for any missing data to prevent UI errors
+    const processedFarms = farms.map((farm) => ({
+      ...farm,
+      // Important: Initialize with empty arrays if these properties don't exist
+      members: Array.isArray(farm.members) ? farm.members : [],
+      devices: Array.isArray(farm.devices) ? farm.devices : [],
+    }));
+
+    return {
+      data: processedFarms,
+      total: processedFarms.length,
+      page: 1,
+      limit: processedFarms.length,
+      totalPages: 1,
+    };
+  } catch (error) {
+    console.error("Get farms error:", error);
+    throw error;
+  }
+};
+
+export const getFarm = async (farmId) => {
+  try {
+    // Use query parameters to include relationships if supported by your API
+    const response = await api.get(`/farms/${farmId}`);
+
+    // Process the response to ensure members and devices arrays exist
+    if (response.data) {
+      const farm = response.data;
+      return {
+        ...farm,
+        // Ensure members property exists
+        members: farm.members || [],
+        // Ensure devices property exists
+        devices: farm.devices || [],
+      };
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`Get farm ${farmId} error:`, error);
+    throw error;
+  }
+};
+
 export const createFarm = async (farmData) => {
   try {
-    const response = await api.post("/farms", farmData);
+    // Ensure we're only sending the fields the backend expects
+    const payload = {
+      name: farmData.name,
+      description: farmData.description || "",
+    };
+
+    const response = await api.post("/farms", payload);
     return response.data;
   } catch (error) {
     console.error("Farm creation error:", error);
@@ -64,19 +147,15 @@ export const createFarm = async (farmData) => {
   }
 };
 
-export const getFarms = async () => {
-  try {
-    const response = await api.get("/farms/my-farms");
-    return response.data;
-  } catch (error) {
-    console.error("Get farms error:", error);
-    throw error;
-  }
-};
-
 export const updateFarm = async (farmId, farmData) => {
   try {
-    const response = await api.patch(`/farms/${farmId}`, farmData);
+    // Ensure we're only sending the fields the backend expects
+    const payload = {
+      name: farmData.name,
+      description: farmData.description || "",
+    };
+
+    const response = await api.patch(`/farms/${farmId}`, payload);
     return response.data;
   } catch (error) {
     console.error("Farm update error:", error);
@@ -125,6 +204,16 @@ export const getDevices = async (farmId) => {
   }
 };
 
+export const getDevice = async (deviceId) => {
+  try {
+    const response = await api.get(`/devices/${deviceId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Get device ${deviceId} error:`, error);
+    throw error;
+  }
+};
+
 export const addDevice = async (deviceData) => {
   try {
     const response = await api.post("/devices", deviceData);
@@ -151,6 +240,81 @@ export const deleteDevice = async (deviceId) => {
     return response.data;
   } catch (error) {
     console.error("Delete device error:", error);
+    throw error;
+  }
+};
+
+// Sensor API calls
+export const getSensors = async (deviceId) => {
+  try {
+    const response = await api.get(`/sensors/by-device/${deviceId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get sensors error:", error);
+    throw error;
+  }
+};
+
+export const getSensor = async (sensorId) => {
+  try {
+    const response = await api.get(`/sensors/${sensorId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Get sensor ${sensorId} error:`, error);
+    throw error;
+  }
+};
+
+export const addSensor = async (sensorData) => {
+  try {
+    const response = await api.post("/sensors", sensorData);
+    return response.data;
+  } catch (error) {
+    console.error("Add sensor error:", error);
+    throw error;
+  }
+};
+
+export const updateSensor = async (sensorId, sensorData) => {
+  try {
+    const response = await api.patch(`/sensors/${sensorId}`, sensorData);
+    return response.data;
+  } catch (error) {
+    console.error("Update sensor error:", error);
+    throw error;
+  }
+};
+
+export const deleteSensor = async (sensorId) => {
+  try {
+    const response = await api.delete(`/sensors/${sensorId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete sensor error:", error);
+    throw error;
+  }
+};
+
+// Sensor reading API calls
+export const getSensorReadings = async (sensorId, params = {}) => {
+  try {
+    const response = await api.get(`/sensors/${sensorId}/readings`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Get sensor readings error:", error);
+    throw error;
+  }
+};
+
+export const addSensorReading = async (sensorId, readingData) => {
+  try {
+    const response = await api.post(
+      `/sensors/${sensorId}/readings`,
+      readingData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Add sensor reading error:", error);
     throw error;
   }
 };

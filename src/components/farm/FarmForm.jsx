@@ -1,46 +1,7 @@
 // src/components/farm/FarmForm.jsx
 import { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  TextField,
-  Grid,
-  MenuItem,
-  Divider,
-  FormControlLabel,
-  Switch,
-  InputAdornment,
-  Typography,
-  useTheme,
-} from "@mui/material";
-import {
-  SaveOutlined as SaveIcon,
-  LocationOnOutlined as LocationIcon,
-  CropSquare as CropSquareIcon,
-  WaterDropOutlined as WaterDropIcon,
-  CloudOutlined as CloudIcon,
-} from "@mui/icons-material";
-
-const farmTypes = [
-  "Crop Farm",
-  "Livestock Farm",
-  "Mixed Farm",
-  "Orchard",
-  "Vineyard",
-  "Greenhouse",
-  "Hydroponic",
-  "Aquaculture",
-];
-
-const soilTypes = [
-  "Clay",
-  "Sandy",
-  "Silty",
-  "Peaty",
-  "Chalky",
-  "Loamy",
-  "Mixed",
-];
+import { Box, Button, TextField, Typography, useTheme } from "@mui/material";
+import { SaveOutlined as SaveIcon } from "@mui/icons-material";
 
 const FarmForm = ({
   initialData = {},
@@ -51,38 +12,33 @@ const FarmForm = ({
 }) => {
   const theme = useTheme();
 
+  // Form state with default values
   const [formData, setFormData] = useState({
     name: "",
-    farmType: "Crop Farm",
-    location: "",
-    area: "",
-    soilType: "Loamy",
-    irrigationSource: "",
-    weatherStationAvailable: false,
     description: "",
-    ...initialData,
   });
 
   const [errors, setErrors] = useState({});
 
+  // Update form data when initialData changes
   useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        name: initialData.name || "",
+        description: initialData.description || "",
+      });
     }
   }, [initialData]);
 
+  // Handle input changes
   const handleChange = (e) => {
-    const { name, value, checked, type } = e.target;
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: type === "checkbox" ? checked : value,
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
     }));
 
-    // Clear error when field changes
+    // Clear validation error when field changes
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -91,6 +47,7 @@ const FarmForm = ({
     }
   };
 
+  // Validate the form
   const validateForm = () => {
     const newErrors = {};
 
@@ -99,15 +56,11 @@ const FarmForm = ({
       newErrors.name = "Farm name is required";
     }
 
-    // Area validation (must be a number)
-    if (formData.area && isNaN(parseFloat(formData.area))) {
-      newErrors.area = "Area must be a number";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -115,209 +68,143 @@ const FarmForm = ({
       return;
     }
 
-    // Clean up the data before submitting
-    const cleanedData = {
-      ...formData,
-      area: formData.area ? parseFloat(formData.area) : null,
-    };
-
-    onSubmit(cleanedData);
+    onSubmit(formData);
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, color: theme.palette.primary.main }}
-          >
-            Basic Information
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            required
-            fullWidth
-            label="Farm Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            placeholder="Enter farm name"
-            disabled={isLoading}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            fullWidth
-            label="Farm Type"
-            name="farmType"
-            value={formData.farmType}
-            onChange={handleChange}
-            disabled={isLoading}
-          >
-            {farmTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Location"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            placeholder="Enter address or coordinates"
-            disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LocationIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography
-            variant="h6"
-            sx={{ mt: 2, mb: 2, color: theme.palette.primary.main }}
-          >
-            Land & Environmental Details
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Area"
-            name="area"
-            type="number"
-            value={formData.area}
-            onChange={handleChange}
-            placeholder="Enter farm area"
-            error={!!errors.area}
-            helperText={errors.area}
-            disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <CropSquareIcon color="primary" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">hectares</InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            fullWidth
-            label="Soil Type"
-            name="soilType"
-            value={formData.soilType}
-            onChange={handleChange}
-            disabled={isLoading}
-          >
-            {soilTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Irrigation Source"
-            name="irrigationSource"
-            value={formData.irrigationSource}
-            onChange={handleChange}
-            placeholder="E.g., Well, River, Rain"
-            disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <WaterDropIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
-            <CloudIcon color="primary" sx={{ mr: 1 }} />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.weatherStationAvailable}
-                  onChange={handleChange}
-                  name="weatherStationAvailable"
-                  color="primary"
-                  disabled={isLoading}
-                />
-              }
-              label="Weather Station Available"
-            />
-          </Box>
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            multiline
-            rows={4}
-            placeholder="Additional information about this farm..."
-            disabled={isLoading}
-          />
-        </Grid>
-
-        <Grid
-          item
-          xs={12}
-          sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}
+      {/* Farm Name Field */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          component="label"
+          htmlFor="farm-name"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
         >
-          <Button
-            type="button"
-            variant="outlined"
-            onClick={onCancel}
-            sx={{ mr: 2 }}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            startIcon={<SaveIcon />}
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : isEdit ? "Update Farm" : "Create Farm"}
-          </Button>
-        </Grid>
-      </Grid>
+          Farm Name
+        </Typography>
+        <TextField
+          required
+          fullWidth
+          id="farm-name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          error={!!errors.name}
+          helperText={errors.name}
+          placeholder="Enter farm name"
+          disabled={isLoading}
+          autoFocus
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name ? theme.palette.error.main : "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name
+                ? theme.palette.error.main
+                : theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
+
+      {/* Description Field */}
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          component="label"
+          htmlFor="farm-description"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
+        >
+          Description
+        </Typography>
+        <TextField
+          fullWidth
+          id="farm-description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          multiline
+          rows={4}
+          placeholder="Additional information about this farm..."
+          disabled={isLoading}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
+
+      {/* Buttons */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Button
+          type="button"
+          onClick={onCancel}
+          disabled={isLoading}
+          sx={{
+            color: theme.palette.primary.main,
+            border: "none",
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
+            },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          startIcon={<SaveIcon />}
+          disabled={isLoading}
+          sx={{
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            boxShadow: "none",
+            "&:hover": {
+              boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+            },
+          }}
+        >
+          {isLoading ? "Saving..." : isEdit ? "Update Farm" : "Create Farm"}
+        </Button>
+      </Box>
     </Box>
   );
 };

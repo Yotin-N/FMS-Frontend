@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-// src/components/farm/members/FarmMembersDialog.jsx
+// src/components/farm/members/FarmMembersDialog.jsx - Handling UUID issue
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -33,54 +32,96 @@ import {
   AdminPanelSettings as AdminIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
-import { addFarmMember, removeFarmMember } from "../../../services/api";
+import {
+  addFarmMember,
+  removeFarmMember,
+  getAllUsers,
+} from "../../../services/api";
 
 const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
   const theme = useTheme();
 
   // States
   const [members, setMembers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
-  // Mock data - in a real app, fetch this from the API
+  // Load all users and farm members when dialog opens
   useEffect(() => {
     if (open && farmId) {
-      // Simulate loading members
-      setIsLoading(true);
-      setTimeout(() => {
-        setMembers([
-          {
-            id: "1",
-            email: "owner@example.com",
-            firstName: "John",
-            lastName: "Doe",
-            role: "ADMIN",
-            isOwner: true,
-          },
-          {
-            id: "2",
-            email: "manager@example.com",
-            firstName: "Jane",
-            lastName: "Smith",
-            role: "USER",
-            isOwner: false,
-          },
-        ]);
-        setIsLoading(false);
-      }, 1000);
+      loadFarmMembers();
+      loadAllUsers();
     }
   }, [open, farmId]);
+
+  // Load all users to find user IDs
+  const loadAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const usersData = await getAllUsers();
+
+      // Log the response to debug
+      console.log("All users response:", usersData);
+
+      // Handle different response structures
+      let users = [];
+      if (usersData && Array.isArray(usersData)) {
+        users = usersData;
+      } else if (usersData && Array.isArray(usersData.data)) {
+        users = usersData.data;
+      }
+
+      setAllUsers(users);
+    } catch (err) {
+      console.error("Error loading users:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Simulate loading farm members
+  // In real app, you would fetch this from backend
+  const loadFarmMembers = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    // Mock implementation - in real app, replace with API call
+    setTimeout(() => {
+      const mockMembers = [
+        {
+          id: "1", // UUID in real implementation
+          email: "owner@example.com",
+          firstName: "John",
+          lastName: "Doe",
+          role: "ADMIN",
+          isOwner: true,
+        },
+        {
+          id: "2", // UUID in real implementation
+          email: "member@example.com",
+          firstName: "Jane",
+          lastName: "Smith",
+          role: "USER",
+          isOwner: false,
+        },
+      ];
+
+      setMembers(mockMembers);
+      setIsLoading(false);
+    }, 500);
+  };
 
   // Filter members based on search term
   const filteredMembers = members.filter(
     (member) =>
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${member.firstName} ${member.lastName}`
+      member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${member.firstName || ""} ${member.lastName || ""}`
         .toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
@@ -101,6 +142,14 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     return re.test(String(email).toLowerCase());
   };
 
+  // Find user ID by email from loaded users
+  const findUserIdByEmail = (email) => {
+    const user = allUsers.find(
+      (user) => user.email && user.email.toLowerCase() === email.toLowerCase()
+    );
+    return user ? user.id : null;
+  };
+
   // Handle add member
   const handleAddMember = async () => {
     // Validate email format
@@ -115,8 +164,22 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     }
 
     // Check if member already exists
-    if (members.some((member) => member.email === email)) {
+    if (
+      members.some(
+        (member) =>
+          member.email && member.email.toLowerCase() === email.toLowerCase()
+      )
+    ) {
       setEmailError("User is already a member of this farm");
+      return;
+    }
+
+    // Find user ID from the email
+    const userId = findUserIdByEmail(email);
+    if (!userId) {
+      setEmailError(
+        "User not found. Please make sure the email is registered."
+      );
       return;
     }
 
@@ -124,35 +187,26 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     setError(null);
 
     try {
-      // Use a placeholder userId for this example
-      // In a real app, you would need to look up the userId by email first
-      const userId = "mock-user-id";
+      // Log the data we're sending to the API for debugging
+      console.log("Adding member with:", { farmId, userId });
 
-      // In a real app, this would be an actual API call
-      // await addFarmMember(farmId, userId);
+      // Call API with proper UUID
+      await addFarmMember(farmId, userId);
 
-      // Simulate successful API call
-      setTimeout(() => {
-        // Add to the local state
-        setMembers([
-          ...members,
-          {
-            id: Math.random().toString(36).substring(7),
-            email: email,
-            firstName: "New",
-            lastName: "User",
-            role: "USER",
-            isOwner: false,
-          },
-        ]);
+      // Reload farm members
+      await loadFarmMembers();
 
-        setEmail("");
-        setSuccess("Member added successfully!");
-        setIsLoading(false);
-      }, 1000);
+      setEmail("");
+      setSuccess("Member added successfully!");
     } catch (err) {
       console.error("Error adding member:", err);
-      setError("Failed to add member. Please try again.");
+      const errorMessage =
+        err.response?.data?.message ||
+        "Failed to add member. Please try again.";
+      setError(
+        Array.isArray(errorMessage) ? errorMessage.join(", ") : errorMessage
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -170,20 +224,21 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     setError(null);
 
     try {
-      // In a real app, this would be an actual API call
-      // await removeFarmMember(farmId, memberId);
+      await removeFarmMember(farmId, memberId);
 
-      // Simulate successful API call
-      setTimeout(() => {
-        // Remove from the local state
-        setMembers(members.filter((member) => member.id !== memberId));
+      // Reload farm members
+      await loadFarmMembers();
 
-        setSuccess("Member removed successfully!");
-        setIsLoading(false);
-      }, 1000);
+      setSuccess("Member removed successfully!");
     } catch (err) {
       console.error("Error removing member:", err);
-      setError("Failed to remove member. Please try again.");
+      const errorMessage =
+        err.response?.data?.message ||
+        "Failed to remove member. Please try again.";
+      setError(
+        Array.isArray(errorMessage) ? errorMessage.join(", ") : errorMessage
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -219,7 +274,9 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
             alignItems: "center",
           }}
         >
-          <Typography variant="h6">Manage Farm Members</Typography>
+          <Typography variant="h6" fontWeight={600}>
+            Manage Farm Members
+          </Typography>
           <IconButton edge="end" onClick={handleClose} aria-label="close">
             <CloseIcon />
           </IconButton>
@@ -234,7 +291,7 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
       <DialogContent sx={{ p: 0 }}>
         {/* Add Member Form */}
         <Box sx={{ p: 3, bgcolor: theme.palette.secondary.light }}>
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" fontWeight={500} gutterBottom>
             Add a New Member
           </Typography>
 
@@ -248,19 +305,40 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
               error={!!emailError}
               helperText={emailError}
               placeholder="Enter email address"
-              disabled={isLoading}
+              disabled={isLoading || loadingUsers}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1,
+                },
+              }}
             />
             <Button
               variant="contained"
               color="primary"
               startIcon={<PersonAddIcon />}
               onClick={handleAddMember}
-              disabled={isLoading}
-              sx={{ whiteSpace: "nowrap", py: 1 }}
+              disabled={isLoading || loadingUsers}
+              sx={{
+                whiteSpace: "nowrap",
+                py: 1,
+                borderRadius: 1,
+                textTransform: "none",
+                boxShadow: "none",
+              }}
             >
               {isLoading ? "Adding..." : "Add Member"}
             </Button>
           </Box>
+
+          {loadingUsers && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, display: "block" }}
+            >
+              Loading users...
+            </Typography>
+          )}
         </Box>
 
         <Divider />
@@ -280,6 +358,11 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                     <SearchIcon />
                   </InputAdornment>
                 ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1,
+                },
               }}
             />
           </Box>
@@ -340,7 +423,9 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                 <ListItemText
                   primary={
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {`${member.firstName} ${member.lastName}`}
+                      {`${member.firstName || ""} ${
+                        member.lastName || ""
+                      }`.trim() || "Unknown User"}
                       {member.isOwner && (
                         <Chip
                           label="Owner"
@@ -351,7 +436,7 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                       )}
                     </Box>
                   }
-                  secondary={member.email}
+                  secondary={member.email || ""}
                 />
 
                 <ListItemSecondaryAction>
@@ -380,7 +465,14 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={handleClose} variant="outlined">
+        <Button
+          onClick={handleClose}
+          variant="outlined"
+          sx={{
+            borderRadius: 1,
+            textTransform: "none",
+          }}
+        >
           Close
         </Button>
       </DialogActions>

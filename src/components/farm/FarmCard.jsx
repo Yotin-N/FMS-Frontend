@@ -12,6 +12,7 @@ import {
   MenuItem,
   ListItemIcon,
   Button,
+  Chip,
 } from "@mui/material";
 import {
   MoreVert as MoreVertIcon,
@@ -19,11 +20,18 @@ import {
   Delete as DeleteIcon,
   People as PeopleIcon,
   ArrowForward as ArrowForwardIcon,
+  DevicesOther as DevicesIcon,
 } from "@mui/icons-material";
 
 const FarmCard = ({ farm, onEditClick, onDeleteClick, onMembersClick }) => {
   const navigate = useNavigate();
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+
+  // Get the correct member count
+  const memberCount = farm.members?.length || 0;
+
+  // Get the correct device count
+  const deviceCount = farm.devices?.length || 0;
 
   const handleMenuOpen = (event) => {
     event.stopPropagation();
@@ -79,24 +87,33 @@ const FarmCard = ({ farm, onEditClick, onDeleteClick, onMembersClick }) => {
           </IconButton>
         </Box>
 
-        {/* Members count */}
-        <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
-          <PeopleIcon
-            fontSize="small"
-            sx={{ mr: 0.5, color: "text.secondary", opacity: 0.8 }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            {farm.members?.length || 1} Members
-          </Typography>
-        </Box>
-
         {/* Description */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          {farm.description || `A test farm ${farm.name.split(" ").pop()}`}
+          {farm.description || "No description provided"}
         </Typography>
+
+        {/* Stats */}
+        <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+          <Chip
+            icon={<PeopleIcon style={{ fontSize: 16 }} />}
+            label={`${memberCount} Members`}
+            size="small"
+            variant="outlined"
+            sx={{ fontWeight: 400 }}
+          />
+
+          <Chip
+            icon={<DevicesIcon style={{ fontSize: 16 }} />}
+            label={`${deviceCount} Devices`}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ fontWeight: 400 }}
+          />
+        </Box>
       </CardContent>
 
-      {/* Action button - matching Device Management page */}
+      {/* Action button */}
       <CardActions
         sx={{ pt: 0, pb: 2, px: 2, mt: "auto", justifyContent: "flex-end" }}
       >

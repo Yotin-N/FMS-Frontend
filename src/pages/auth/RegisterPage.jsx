@@ -1,4 +1,5 @@
-// src/pages/auth/RegisterPage.jsx - Updated version
+/* eslint-disable no-unused-vars */
+// src/pages/auth/RegisterPage.jsx
 import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
@@ -77,9 +78,7 @@ const RegisterPage = () => {
     } else {
       if (!formData.firstName) errors.firstName = "First name required";
       if (!formData.lastName) errors.lastName = "Last name required";
-      if (!formData.phoneNumber) errors.phoneNumber = "Phone number required";
-      else if (!/^\d{10}$/.test(formData.phoneNumber))
-        errors.phoneNumber = "Invalid phone";
+      // Phone number is optional in this implementation
     }
 
     setValidationErrors(errors);
@@ -98,8 +97,13 @@ const RegisterPage = () => {
 
     setIsSubmitting(true);
     setError("");
+
     try {
-      const result = await register(formData);
+      // Remove confirmPassword from the data sent to the backend
+      const { confirmPassword, ...registrationData } = formData;
+
+      const result = await register(registrationData);
+
       if (result.success) {
         setSuccess(true);
         setTimeout(
@@ -112,8 +116,14 @@ const RegisterPage = () => {
       } else {
         setError(result.message || "Registration failed");
       }
-    } catch {
-      setError("Something went wrong");
+    } catch (error) {
+      // Extract error message from the API response if available
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong";
+
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
