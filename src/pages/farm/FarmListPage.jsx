@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/pages/farm/FarmListPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,9 @@ import {
   MenuItem,
   ListItemIcon,
   InputAdornment,
+  Stack,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -48,6 +51,10 @@ import FarmMembersDialog from "../../components/farm/members/FarmMembersDialog";
 const FarmListPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+
+  // Responsive breakpoints
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // State
   const [farms, setFarms] = useState([]);
@@ -215,34 +222,35 @@ const FarmListPage = () => {
   return (
     <Box>
       {/* Page Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          flexDirection: { xs: "column", sm: "row" },
-          gap: { xs: 2, sm: 0 },
-        }}
+      <Stack
+        direction={isSmallScreen ? "column" : "row"}
+        justifyContent="space-between"
+        alignItems={isSmallScreen ? "stretch" : "center"}
+        spacing={2}
+        sx={{ mb: 3 }}
       >
         <Typography variant="h4" component="h1">
           Farm Management
         </Typography>
 
-        <Box
-          sx={{ display: "flex", gap: 2, width: { xs: "100%", sm: "auto" } }}
+        <Stack
+          direction="row"
+          spacing={2}
+          width={isSmallScreen ? "100%" : "auto"}
+          alignItems="center"
         >
           <TextField
             placeholder="Search farms..."
             variant="outlined"
-            size="small"
-            fullWidth
+            size="medium"
+            fullWidth={isSmallScreen}
             value={searchQuery}
             onChange={handleSearchChange}
             sx={{
-              minWidth: { sm: "200px" },
               backgroundColor: "white",
               borderRadius: 1,
+              flex: isSmallScreen ? 1 : "none",
+              minWidth: { sm: "200px" },
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1,
               },
@@ -261,12 +269,16 @@ const FarmListPage = () => {
             color="primary"
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
-            sx={{ whiteSpace: "nowrap" }}
+            sx={{
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              height: "40px",
+            }}
           >
             Add Farm
           </Button>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Loading State */}
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
@@ -314,7 +326,12 @@ const FarmListPage = () => {
             borderRadius: 2,
           }}
         >
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            gutterBottom
+            align="center"
+          >
             {searchQuery ? "No farms match your search" : "No farms found"}
           </Typography>
 
@@ -333,7 +350,7 @@ const FarmListPage = () => {
       ) : (
         <Grid container spacing={3}>
           {filteredFarms.map((farm) => (
-            <Grid item key={farm.id} xs={12} sm={6} md={4}>
+            <Grid item key={farm.id} xs={12} sm={6} lg={4}>
               <Card
                 sx={{
                   height: "100%",
@@ -357,7 +374,16 @@ const FarmListPage = () => {
                 </IconButton>
 
                 <CardContent sx={{ flexGrow: 1, pt: 3 }}>
-                  <Typography variant="h5" component="h2" gutterBottom noWrap>
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    gutterBottom
+                    noWrap
+                    sx={{
+                      pr: 4,
+                      fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                    }}
+                  >
                     {farm.name}
                   </Typography>
 
@@ -366,9 +392,17 @@ const FarmListPage = () => {
                       <RoomIcon
                         fontSize="small"
                         color="action"
-                        sx={{ mr: 0.5 }}
+                        sx={{ mr: 0.5, flexShrink: 0 }}
                       />
-                      <Typography variant="body2" color="text.secondary" noWrap>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        noWrap
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
                         {farm.location}
                       </Typography>
                     </Box>
@@ -378,7 +412,7 @@ const FarmListPage = () => {
                     <PeopleIcon
                       fontSize="small"
                       color="action"
-                      sx={{ mr: 0.5 }}
+                      sx={{ mr: 0.5, flexShrink: 0 }}
                     />
                     <Typography variant="body2" color="text.secondary">
                       {farm.members?.length || 1}{" "}

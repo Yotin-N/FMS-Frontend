@@ -152,7 +152,7 @@ const LoginPage = () => {
           flexDirection: "column",
           alignItems: "center",
           maxWidth: "sm",
-          width: "100%",
+          width: "400px",
           borderRadius: 2,
           boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
         }}

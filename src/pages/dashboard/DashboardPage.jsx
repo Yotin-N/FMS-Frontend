@@ -30,6 +30,9 @@ import useAuth from "../../hooks/useAuth";
 import Navbar from "../../components/layout/Navbar";
 import FarmListPage from "../farm/FarmListPage";
 import DeviceListPage from "../device/DeviceListPage";
+import UserListPage from "../user/UserListPage";
+import CreateUserPage from "../user/CreateUserPage";
+import EditUserPage from "../user/EditUserPage";
 
 const drawerWidth = 240;
 

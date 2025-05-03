@@ -26,7 +26,9 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Stack,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -54,6 +56,10 @@ const DeviceListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+
+  // Responsive breakpoints
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // Get farmId from query parameter
   const queryParams = new URLSearchParams(location.search);
@@ -276,47 +282,42 @@ const DeviceListPage = () => {
   return (
     <Box>
       {/* Page Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          flexDirection: { xs: "column", sm: "row" },
-          gap: { xs: 2, sm: 0 },
-        }}
+      <Stack
+        direction={isSmallScreen ? "column" : "row"}
+        justifyContent="space-between"
+        alignItems={isSmallScreen ? "stretch" : "center"}
+        spacing={2}
+        sx={{ mb: 3 }}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ flex: "none" }}>
           Device Management
         </Typography>
 
-        <Box
-          sx={{ display: "flex", gap: 2, width: { xs: "100%", sm: "auto" } }}
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateDialogOpen(true)}
+          disabled={!selectedFarmId}
+          size={isSmallScreen ? "medium" : "large"}
+          fullWidth={isSmallScreen}
+          sx={{
+            whiteSpace: "nowrap",
+            py: isSmallScreen ? 1.5 : 1.2,
+          }}
         >
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-            disabled={!selectedFarmId}
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Add Device
-          </Button>
-        </Box>
-      </Box>
+          Add Device
+        </Button>
+      </Stack>
 
       {/* Farm Selection and Search */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          alignItems: { xs: "stretch", md: "center" },
-          gap: 2,
-          mb: 3,
-        }}
+      <Stack
+        direction={isMediumScreen ? "column" : "row"}
+        spacing={2}
+        sx={{ mb: 3 }}
+        alignItems="stretch"
       >
-        <FormControl sx={{ minWidth: 200, flex: { md: 1 } }}>
+        <FormControl sx={{ minWidth: { xs: "100%", md: 240 } }}>
           <InputLabel id="farm-select-label">Select Farm</InputLabel>
           <Select
             labelId="farm-select-label"
@@ -324,6 +325,7 @@ const DeviceListPage = () => {
             onChange={handleFarmChange}
             label="Select Farm"
             displayEmpty
+            fullWidth
           >
             {farms.length === 0 ? (
               <MenuItem disabled value="">
@@ -342,15 +344,14 @@ const DeviceListPage = () => {
         <TextField
           placeholder="Search devices..."
           variant="outlined"
-          size="small"
           fullWidth
           disabled={!selectedFarmId}
           value={searchQuery}
           onChange={handleSearchChange}
           sx={{
-            flex: { md: 3 },
             backgroundColor: "white",
             borderRadius: 1,
+            flex: { md: 1 },
             "& .MuiOutlinedInput-root": {
               borderRadius: 1,
             },
@@ -363,7 +364,7 @@ const DeviceListPage = () => {
             ),
           }}
         />
-      </Box>
+      </Stack>
 
       {/* Loading State */}
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
@@ -414,7 +415,13 @@ const DeviceListPage = () => {
           <DevicesOtherIcon
             sx={{ fontSize: 60, color: theme.palette.primary.light, mb: 2 }}
           />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            gutterBottom
+            align="center"
+            sx={{ px: 2 }}
+          >
             Please select a farm to manage devices
           </Typography>
 
@@ -428,7 +435,7 @@ const DeviceListPage = () => {
               Create a Farm First
             </Button>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" align="center">
               Use the dropdown above to select a farm
             </Typography>
           )}
@@ -448,7 +455,12 @@ const DeviceListPage = () => {
             borderRadius: 2,
           }}
         >
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            gutterBottom
+            align="center"
+          >
             {searchQuery ? "No devices match your search" : "No devices found"}
           </Typography>
 
@@ -468,7 +480,7 @@ const DeviceListPage = () => {
         selectedFarmId && (
           <Grid container spacing={3}>
             {filteredDevices.map((device) => (
-              <Grid item key={device.id} xs={12} sm={6} md={4}>
+              <Grid item key={device.id} xs={12} sm={6} lg={4}>
                 <Card
                   sx={{
                     height: "100%",
@@ -505,7 +517,10 @@ const DeviceListPage = () => {
                         component="h2"
                         gutterBottom
                         noWrap
-                        sx={{ pr: 4 }}
+                        sx={{
+                          pr: 4,
+                          fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                        }}
                       >
                         {device.name}
                       </Typography>
@@ -525,7 +540,11 @@ const DeviceListPage = () => {
                         label={device.macAddress || "No MAC Address"}
                         size="small"
                         variant="outlined"
-                        sx={{ fontSize: "0.75rem" }}
+                        sx={{
+                          fontSize: "0.75rem",
+                          maxWidth: "100%",
+                          overflow: "hidden",
+                        }}
                       />
                     </Box>
 
@@ -533,7 +552,12 @@ const DeviceListPage = () => {
                       <Typography
                         variant="body2"
                         color="text.secondary"
-                        sx={{ mb: 1 }}
+                        sx={{
+                          mb: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                        noWrap
                       >
                         Location: {device.location}
                       </Typography>

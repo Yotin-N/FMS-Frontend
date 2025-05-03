@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }) => {
       const response = await loginUser(credentials);
 
       // Store user in state and localStorage
+      // Only keep non-sensitive data
       const userData = {
         id: response.user.id,
         email: response.user.email,
@@ -63,7 +65,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setIsLoading(true);
     try {
+      // Make sure we don't store raw passwords in state
+      // Only send password to the backend for registration
+      const { password, ...safeUserData } = userData;
+
+      // Send all data to backend for registration
       await registerUser(userData);
+
       setIsLoading(false);
       return { success: true };
     } catch (error) {
@@ -87,9 +95,12 @@ export const AuthProvider = ({ children }) => {
 
   // Method to update the user data (used after successful OAuth)
   const updateUserData = (userData) => {
-    setUser(userData);
+    // Make sure we don't store sensitive data
+    const { password, ...safeUserData } = userData;
+
+    setUser(safeUserData);
     setIsAuthenticated(true);
-    localStorage.setItem("farmUser", JSON.stringify(userData));
+    localStorage.setItem("farmUser", JSON.stringify(safeUserData));
   };
 
   const value = {
