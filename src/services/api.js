@@ -352,7 +352,17 @@ export const getUserById = async (userId) => {
 
 export const createUser = async (userData) => {
   try {
-    const response = await api.post("/users", userData);
+    // Create a copy of userData
+    const dataToSend = { ...userData };
+
+    // Convert status to isActive if status is present
+    if ("status" in dataToSend) {
+      dataToSend.isActive = dataToSend.status === "ACTIVE";
+      delete dataToSend.status; // Remove status as it's not in the DTO
+    }
+
+    // Use register endpoint for user creation
+    const response = await api.post("/users/register", dataToSend);
     return response.data;
   } catch (error) {
     console.error("Create user error:", error);
@@ -362,7 +372,21 @@ export const createUser = async (userData) => {
 
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await api.patch(`/users/${userId}`, userData);
+    // Create a clean object with only the fields that can be updated
+    const updateData = {
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      role: userData.role,
+      isActive: userData.isActive,
+    };
+
+    // Only include password if it's provided and not empty
+    if (userData.password) {
+      updateData.password = userData.password;
+    }
+
+    const response = await api.patch(`/users/${userId}`, updateData);
     return response.data;
   } catch (error) {
     console.error(`Update user ${userId} error:`, error);

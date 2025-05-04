@@ -1,4 +1,4 @@
-// src/pages/user/UserListPage.jsx
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,8 +34,14 @@ import {
   Search as SearchIcon,
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material";
-import { getAllUsers, deleteUser } from "../../services/api";
+import {
+  getAllUsers,
+  deleteUser,
+  createUser,
+  updateUser,
+} from "../../services/api";
 import useAuth from "../../hooks/useAuth";
+import UserDialog from "../../components/user/UserDialog";
 
 const UserListPage = () => {
   const theme = useTheme();
@@ -50,8 +56,10 @@ const UserListPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Dialog state
+  // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   // Load users on component mount
@@ -92,6 +100,42 @@ const UserListPage = () => {
     }
   };
 
+  // Handle user creation
+  const handleCreateUser = async (userData) => {
+    setIsLoading(true);
+
+    try {
+      await createUser(userData);
+      await loadUsers();
+      setCreateDialogOpen(false);
+      setSuccess("User created successfully!");
+    } catch (err) {
+      console.error("Error creating user:", err);
+      setError("Failed to create user. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle user update
+  const handleUpdateUser = async (userData) => {
+    if (!selectedUser) return;
+
+    setIsLoading(true);
+
+    try {
+      await updateUser(selectedUser.id, userData);
+      await loadUsers();
+      setEditDialogOpen(false);
+      setSuccess("User updated successfully!");
+    } catch (err) {
+      console.error("Error updating user:", err);
+      setError("Failed to update user. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle user deletion
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
@@ -123,15 +167,16 @@ const UserListPage = () => {
     setSearchQuery(event.target.value);
   };
 
+  // Open edit dialog
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setEditDialogOpen(true);
+  };
+
   // Open delete dialog
   const handleDeleteClick = (user) => {
     setSelectedUser(user);
     setDeleteDialogOpen(true);
-  };
-
-  // Navigate to edit user
-  const handleEditClick = (user) => {
-    navigate(`/dashboard/users/edit/${user.id}`);
   };
 
   // Close snackbar alerts
@@ -149,11 +194,6 @@ const UserListPage = () => {
       case "ADMIN":
         return {
           bg: theme.palette.primary.main,
-          text: "white",
-        };
-      case "MANAGER":
-        return {
-          bg: theme.palette.info.main,
           text: "white",
         };
       default:
@@ -224,9 +264,9 @@ const UserListPage = () => {
           <Button
             variant="contained"
             color="primary"
-            startIcon={<PersonAddIcon />}
-            onClick={() => navigate("/dashboard/users/create")}
-            sx={{ whiteSpace: "nowrap" }}
+            startIcon={<PersonAddIcon sx={{ ml: 1 }} />}
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{ whiteSpace: "nowrap", width: "40%" }}
           >
             Add User
           </Button>
@@ -309,9 +349,10 @@ const UserListPage = () => {
               ) : (
                 filteredUsers.map((user) => {
                   const roleColor = getRoleChipColor(user.role);
-                  const statusColor = getStatusChipColor(
-                    user.status || "ACTIVE"
-                  );
+
+                  const status =
+                    user.isActive === false ? "INACTIVE" : "ACTIVE";
+                  const statusColor = getStatusChipColor(status);
                   const isCurrentUser = user.id === currentUser?.id;
 
                   return (
@@ -340,7 +381,7 @@ const UserListPage = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={user.status || "ACTIVE"}
+                          label={status}
                           size="small"
                           sx={{
                             backgroundColor: statusColor.bg,
@@ -384,6 +425,26 @@ const UserListPage = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Create User Dialog */}
+      <UserDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSubmit={handleCreateUser}
+        isLoading={isLoading}
+        title="Add New User"
+      />
+
+      {/* Edit User Dialog */}
+      <UserDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSubmit={handleUpdateUser}
+        initialData={selectedUser}
+        isLoading={isLoading}
+        isEdit
+        title="Edit User"
+      />
 
       {/* Delete User Dialog */}
       <Dialog
