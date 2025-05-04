@@ -1,76 +1,81 @@
+/* eslint-disable no-unused-vars */
 // src/components/device/DeviceForm.jsx
 import { useState, useEffect } from "react";
 import {
   Box,
-  Button,
   TextField,
-  Grid,
-  MenuItem,
-  Divider,
   FormControlLabel,
   Switch,
-  InputAdornment,
+  Button,
+  Grid,
+  MenuItem,
+  CircularProgress,
   Typography,
-  Chip,
-  useTheme,
+  Divider,
+  Alert,
 } from "@mui/material";
-import {
-  SaveOutlined as SaveIcon,
-  DevicesOutlined as DeviceIcon,
-  LocationOnOutlined as LocationIcon,
-  Router as RouterIcon,
-  InfoOutlined as InfoIcon,
-} from "@mui/icons-material";
-
-const deviceTypes = [
-  { value: "sensor-hub", label: "Sensor Hub" },
-  { value: "controller", label: "Controller" },
-  { value: "gateway", label: "Gateway" },
-  { value: "weather-station", label: "Weather Station" },
-  { value: "irrigation-controller", label: "Irrigation Controller" },
-  { value: "camera", label: "Camera" },
-];
+import { getFarms } from "../../services/api"; // Make sure this import matches your API structure
 
 const DeviceForm = ({
   initialData = {},
-  farmName,
   onSubmit,
   onCancel,
   isLoading = false,
   isEdit = false,
 }) => {
-  const theme = useTheme();
-
+  // Initialize form data with only the fields needed for create/update
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    location: "",
-    macAddress: "",
-    deviceType: "sensor-hub",
+    farmId: "",
     isActive: true,
-    ...initialData,
   });
 
+  const [farms, setFarms] = useState([]);
   const [errors, setErrors] = useState({});
+  const [isLoadingFarms, setIsLoadingFarms] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Load farms for the dropdown
   useEffect(() => {
-    if (initialData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...initialData,
-      }));
+    const loadFarms = async () => {
+      setIsLoadingFarms(true);
+      try {
+        const response = await getFarms();
+        setFarms(response.data || []);
+      } catch (err) {
+        setError("Failed to load farms. Please try again.");
+        console.error("Error loading farms:", err);
+      } finally {
+        setIsLoadingFarms(false);
+      }
+    };
+
+    loadFarms();
+  }, []);
+
+  // Update form data when initialData changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      // Extract only the fields we need for the form
+      const { name, description, farmId, isActive } = initialData;
+      setFormData({
+        name: name || "",
+        description: description || "",
+        farmId: farmId || "",
+        isActive: isActive !== undefined ? isActive : true,
+      });
     }
   }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
-
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error when field changes
+    // Clear validation error when field changes
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -82,25 +87,18 @@ const DeviceForm = ({
   const validateForm = () => {
     const newErrors = {};
 
-    // Name validation (required)
+    // Validate required fields
     if (!formData.name.trim()) {
       newErrors.name = "Device name is required";
     }
 
-    // MAC address format validation (optional field)
-    if (formData.macAddress && !validateMacAddress(formData.macAddress)) {
-      newErrors.macAddress =
-        "Invalid MAC address format (e.g., 00:1B:44:11:3A:B7)";
+    // Only validate farmId for new devices, not for edits
+    if (!isEdit && !formData.farmId) {
+      newErrors.farmId = "Farm is required";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const validateMacAddress = (mac) => {
-    // Basic MAC address format validation (XX:XX:XX:XX:XX:XX)
-    const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
-    return regex.test(mac);
   };
 
   const handleSubmit = (e) => {
@@ -110,107 +108,42 @@ const DeviceForm = ({
       return;
     }
 
-    onSubmit(formData);
+    // When submitting for update, don't include farmId
+    if (isEdit) {
+      const { farmId, ...updateData } = formData;
+      onSubmit(updateData);
+    } else {
+      onSubmit(formData);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Grid container spacing={3}>
+    <Box component="form" onSubmit={handleSubmit}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{ color: theme.palette.primary.main, flexGrow: 1 }}
-            >
-              Device Information
-            </Typography>
-            <Chip
-              label={`Farm: ${farmName}`}
-              color="primary"
-              variant="outlined"
-              size="small"
-            />
-          </Box>
-          <Divider sx={{ mb: 3 }} />
+          <Typography variant="h6" gutterBottom>
+            Device Information
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12}>
           <TextField
-            required
             fullWidth
+            required
             label="Device Name"
             name="name"
             value={formData.name}
             onChange={handleChange}
             error={!!errors.name}
             helperText={errors.name}
-            placeholder="Enter device name"
             disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <DeviceIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            fullWidth
-            label="Device Type"
-            name="deviceType"
-            value={formData.deviceType}
-            onChange={handleChange}
-            disabled={isLoading}
-          >
-            {deviceTypes.map((type) => (
-              <MenuItem key={type.value} value={type.value}>
-                {type.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="MAC Address"
-            name="macAddress"
-            value={formData.macAddress}
-            onChange={handleChange}
-            error={!!errors.macAddress}
-            helperText={errors.macAddress || "Format: XX:XX:XX:XX:XX:XX"}
-            placeholder="e.g., 00:1B:44:11:3A:B7"
-            disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <RouterIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Location on Farm"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            placeholder="E.g., North Field, Greenhouse 2"
-            disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LocationIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
           />
         </Grid>
 
@@ -219,24 +152,45 @@ const DeviceForm = ({
             fullWidth
             label="Description"
             name="description"
-            value={formData.description}
+            value={formData.description || ""}
             onChange={handleChange}
             multiline
             rows={3}
-            placeholder="Additional information about this device..."
             disabled={isLoading}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <InfoIcon
-                    color="primary"
-                    sx={{ alignSelf: "flex-start", mt: 1.5 }}
-                  />
-                </InputAdornment>
-              ),
-            }}
           />
         </Grid>
+
+        {/* Only show farm selection for new devices */}
+        {!isEdit && (
+          <Grid item xs={12}>
+            <TextField
+              select
+              fullWidth
+              required
+              label="Farm"
+              name="farmId"
+              value={formData.farmId}
+              onChange={handleChange}
+              error={!!errors.farmId}
+              helperText={errors.farmId}
+              disabled={isLoading || isLoadingFarms}
+              InputProps={{
+                endAdornment: isLoadingFarms ? (
+                  <CircularProgress size={20} />
+                ) : null,
+              }}
+            >
+              <MenuItem value="" disabled>
+                Select a farm
+              </MenuItem>
+              {farms.map((farm) => (
+                <MenuItem key={farm.id} value={farm.id}>
+                  {farm.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        )}
 
         <Grid item xs={12}>
           <FormControlLabel
@@ -256,13 +210,13 @@ const DeviceForm = ({
         <Grid
           item
           xs={12}
-          sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}
+          sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
         >
           <Button
             type="button"
             variant="outlined"
             onClick={onCancel}
-            sx={{ mr: 2 }}
+            sx={{ mr: 1 }}
             disabled={isLoading}
           >
             Cancel
@@ -271,7 +225,6 @@ const DeviceForm = ({
             type="submit"
             variant="contained"
             color="primary"
-            startIcon={<SaveIcon />}
             disabled={isLoading}
           >
             {isLoading

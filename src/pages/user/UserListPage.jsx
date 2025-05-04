@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+// src/pages/user/UserListPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -33,6 +34,10 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   PersonAdd as PersonAddIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  AdminPanelSettings as AdminIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import {
   getAllUsers,
@@ -188,32 +193,58 @@ const UserListPage = () => {
     setSuccess(null);
   };
 
-  // Get chip color based on role
-  const getRoleChipColor = (role) => {
+  // Get chip styling for role
+  const getRoleChipProps = (role) => {
     switch (role) {
       case "ADMIN":
         return {
-          bg: theme.palette.primary.main,
-          text: "white",
+          icon: <AdminIcon fontSize="small" />,
+          label: "Admin",
+          sx: {
+            fontWeight: 500,
+            backgroundColor: "#e8f5e9", // Green background
+            color: "#2e7d32", // Green text
+            minWidth: "100px",
+          },
         };
       default:
         return {
-          bg: theme.palette.secondary.main,
-          text: theme.palette.primary.main,
+          icon: <PersonIcon fontSize="small" />,
+          label: "User",
+          sx: {
+            fontWeight: 500,
+            backgroundColor: "#e8f5e9", // Light green background
+            color: "#2e7d32", // Green text
+            minWidth: "100px",
+          },
         };
     }
   };
 
-  // Get status chip color
-  const getStatusChipColor = (status) => {
-    return status === "ACTIVE"
+  // Get chip styling for status
+  const getStatusChipProps = (isActive) => {
+    return isActive
       ? {
-          bg: theme.palette.success.light,
-          text: theme.palette.success.dark,
+          icon: <CheckCircleIcon fontSize="small" />,
+          label: "Active",
+          sx: {
+            fontWeight: 500,
+            backgroundColor: "#e8f5e9", // Light green background
+            color: "#2e7d32", // Green text
+            border: "1px solid #2e7d32", // Green border
+            minWidth: "100px",
+          },
         }
       : {
-          bg: theme.palette.error.light,
-          text: theme.palette.error.dark,
+          icon: <CancelIcon fontSize="small" />,
+          label: "Inactive",
+          sx: {
+            fontWeight: 500,
+            backgroundColor: "#ffebee", // Light red background
+            color: "#d32f2f", // Red text
+            border: "1px solid #d32f2f", // Red border
+            minWidth: "100px",
+          },
         };
   };
 
@@ -320,11 +351,17 @@ const UserListPage = () => {
           <Table>
             <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: "bold" }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: "bold", pl: 2 }}>Name</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>
+                  Role
+                </TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>
+                  Status
+                </TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -348,11 +385,10 @@ const UserListPage = () => {
                 </TableRow>
               ) : (
                 filteredUsers.map((user) => {
-                  const roleColor = getRoleChipColor(user.role);
-
-                  const status =
-                    user.isActive === false ? "INACTIVE" : "ACTIVE";
-                  const statusColor = getStatusChipColor(status);
+                  const roleChipProps = getRoleChipProps(user.role);
+                  const statusChipProps = getStatusChipProps(
+                    user.isActive !== false
+                  );
                   const isCurrentUser = user.id === currentUser?.id;
 
                   return (
@@ -366,56 +402,57 @@ const UserListPage = () => {
                       }}
                     >
                       <TableCell>
-                        {user.firstName} {user.lastName}
+                        <Typography fontWeight={isCurrentUser ? 600 : 400}>
+                          {user.firstName} {user.lastName}
+                        </Typography>
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={user.role || "USER"}
-                          size="small"
-                          sx={{
-                            backgroundColor: roleColor.bg,
-                            color: roleColor.text,
-                          }}
-                        />
+                      <TableCell align="center">
+                        <Chip {...roleChipProps} />
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={status}
-                          size="small"
-                          sx={{
-                            backgroundColor: statusColor.bg,
-                            color: statusColor.text,
-                          }}
-                        />
+                      <TableCell align="center">
+                        <Chip {...statusChipProps} />
                       </TableCell>
-                      <TableCell>
-                        <Tooltip title="Edit">
+                      <TableCell align="center">
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            justifyContent: "center",
+                          }}
+                        >
+                          {/* Edit button */}
                           <IconButton
                             size="small"
-                            color="primary"
+                            sx={{
+                              color: "#2e7d32", // Green color
+                              p: 1,
+                            }}
                             onClick={() => handleEditClick(user)}
                           >
-                            <EditIcon />
+                            <EditIcon fontSize="small" />
                           </IconButton>
-                        </Tooltip>
 
-                        <Tooltip
-                          title={
-                            isCurrentUser ? "Cannot delete yourself" : "Delete"
-                          }
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteClick(user)}
-                              disabled={isCurrentUser}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                          {/* Delete button */}
+                          <IconButton
+                            size="small"
+                            sx={{
+                              color: "#d32f2f", // Red color
+                              p: 1,
+                            }}
+                            onClick={() => handleDeleteClick(user)}
+                            disabled={isCurrentUser}
+                          >
+                            {isCurrentUser ? (
+                              <DeleteIcon
+                                fontSize="small"
+                                sx={{ color: "#e0e0e0" }}
+                              /> // Light gray for disabled
+                            ) : (
+                              <DeleteIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );

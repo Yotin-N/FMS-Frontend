@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 // src/pages/device/DeviceListPage.jsx
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -6,60 +5,54 @@ import {
   Box,
   Typography,
   Button,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  TextField,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  LinearProgress,
-  Snackbar,
-  Alert,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  InputAdornment,
   Chip,
+  TextField,
+  InputAdornment,
   FormControl,
   InputLabel,
   Select,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  LinearProgress,
+  Snackbar,
+  Alert,
+  Tooltip,
   Stack,
   useTheme,
-  useMediaQuery,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
   Search as SearchIcon,
   Sensors as SensorsIcon,
-  DevicesOther as DevicesOtherIcon,
-  SignalCellularAlt as SignalIcon,
-  SignalCellularConnectedNoInternet0Bar as NoSignalIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import {
   getDevices,
-  getFarms,
-  addDevice,
+  createDevice,
   updateDevice,
   deleteDevice,
-} from "../../services/api";
+} from "../../services/deviceApi";
+
+import { getFarms } from "../../services/api";
 import DeviceForm from "../../components/device/DeviceForm";
-import useAuth from "../../hooks/useAuth";
 
 const DeviceListPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-
-  // Responsive breakpoints
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const isMediumScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   // Get farmId from query parameter
   const queryParams = new URLSearchParams(location.search);
@@ -81,11 +74,7 @@ const DeviceListPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
 
-  // Menu state
-  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [menuDeviceId, setMenuDeviceId] = useState(null);
-
-  // Load farms and devices on component mount
+  // Load farms on component mount
   useEffect(() => {
     loadFarms();
   }, []);
@@ -93,7 +82,7 @@ const DeviceListPage = () => {
   // Load devices when selectedFarmId changes
   useEffect(() => {
     if (selectedFarmId) {
-      loadDevices(selectedFarmId);
+      loadDevices();
     } else {
       setDevices([]);
       setFilteredDevices([]);
@@ -108,8 +97,10 @@ const DeviceListPage = () => {
       const filtered = devices.filter(
         (device) =>
           device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (device.location &&
-            device.location.toLowerCase().includes(searchQuery.toLowerCase()))
+          (device.description &&
+            device.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()))
       );
       setFilteredDevices(filtered);
     }
@@ -122,17 +113,20 @@ const DeviceListPage = () => {
 
     try {
       const response = await getFarms();
-      setFarms(response.data || []);
 
-      // If we have an initialFarmId and it's in the list of farms, use it
-      // Otherwise, use the first farm in the list if available
+      // Make sure we have the data in the expected format
+      const farmsData = response.data || [];
+      setFarms(farmsData);
+
+      // If initialFarmId is set, use it
+      // Otherwise, use the first farm if available
       if (
         initialFarmId &&
-        response.data.some((farm) => farm.id === initialFarmId)
+        farmsData.some((farm) => farm.id === initialFarmId)
       ) {
         setSelectedFarmId(initialFarmId);
-      } else if (response.data.length > 0 && !initialFarmId) {
-        setSelectedFarmId(response.data[0].id);
+      } else if (farmsData.length > 0 && !initialFarmId) {
+        setSelectedFarmId(farmsData[0].id);
       } else {
         setIsLoading(false);
       }
@@ -143,13 +137,13 @@ const DeviceListPage = () => {
     }
   };
 
-  // Load devices for a specific farm
-  const loadDevices = async (farmId) => {
+  // Load devices from API
+  const loadDevices = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await getDevices(farmId);
+      const response = await getDevices(selectedFarmId);
       setDevices(response.data || []);
       setFilteredDevices(response.data || []);
       setIsLoading(false);
@@ -167,9 +161,9 @@ const DeviceListPage = () => {
 
     // Update URL to include the farmId
     if (farmId) {
-      navigate(`/devices?farmId=${farmId}`, { replace: true });
+      navigate(`/dashboard/devices?farmId=${farmId}`, { replace: true });
     } else {
-      navigate("/devices", { replace: true });
+      navigate("/dashboard/devices", { replace: true });
     }
   };
 
@@ -178,13 +172,8 @@ const DeviceListPage = () => {
     setIsLoading(true);
 
     try {
-      const newDevice = {
-        ...deviceData,
-        farmId: selectedFarmId,
-      };
-
-      await addDevice(newDevice);
-      await loadDevices(selectedFarmId);
+      await createDevice(deviceData);
+      await loadDevices();
       setCreateDialogOpen(false);
       setSuccess("Device created successfully!");
     } catch (err) {
@@ -195,15 +184,22 @@ const DeviceListPage = () => {
     }
   };
 
-  // Handle device update
   const handleUpdateDevice = async (deviceData) => {
     if (!selectedDevice) return;
 
     setIsLoading(true);
 
     try {
-      await updateDevice(selectedDevice.id, deviceData);
-      await loadDevices(selectedFarmId);
+      // Create a clean object with only the fields that can be updated
+      const updateData = {
+        name: deviceData.name,
+        description: deviceData.description,
+        isActive: deviceData.isActive,
+      };
+
+      // Send only the valid fields for updating
+      await updateDevice(selectedDevice.id, updateData);
+      await loadDevices();
       setEditDialogOpen(false);
       setSuccess("Device updated successfully!");
     } catch (err) {
@@ -222,7 +218,7 @@ const DeviceListPage = () => {
 
     try {
       await deleteDevice(selectedDevice.id);
-      await loadDevices(selectedFarmId);
+      await loadDevices();
       setDeleteDialogOpen(false);
       setSuccess("Device deleted successfully!");
     } catch (err) {
@@ -233,35 +229,37 @@ const DeviceListPage = () => {
     }
   };
 
+  // Format date string to display in a readable format
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   // Handle search input change
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
-  };
-
-  // Open the device menu
-  const handleMenuOpen = (event, deviceId) => {
-    setMenuAnchorEl(event.currentTarget);
-    setMenuDeviceId(deviceId);
-  };
-
-  // Close the device menu
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-    setMenuDeviceId(null);
   };
 
   // Open the edit dialog
   const handleEditClick = (device) => {
     setSelectedDevice(device);
     setEditDialogOpen(true);
-    handleMenuClose();
   };
 
   // Open the delete dialog
   const handleDeleteClick = (device) => {
     setSelectedDevice(device);
     setDeleteDialogOpen(true);
-    handleMenuClose();
+  };
+
+  // Navigate to sensors for a specific device
+  const handleViewSensors = (deviceId) => {
+    navigate(`/dashboard/devices/${deviceId}/sensors`);
   };
 
   // Close snackbar alerts
@@ -283,41 +281,76 @@ const DeviceListPage = () => {
     <Box>
       {/* Page Header */}
       <Stack
-        direction={isSmallScreen ? "column" : "row"}
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between"
-        alignItems={isSmallScreen ? "stretch" : "center"}
+        alignItems={{ xs: "stretch", sm: "center" }}
         spacing={2}
         sx={{ mb: 3 }}
       >
-        <Typography variant="h4" component="h1" sx={{ flex: "none" }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
           Device Management
         </Typography>
 
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
-          disabled={!selectedFarmId}
-          size={isSmallScreen ? "medium" : "large"}
-          fullWidth={isSmallScreen}
-          sx={{
-            whiteSpace: "nowrap",
-            py: isSmallScreen ? 1.5 : 1.2,
-          }}
+        <Stack
+          direction="row"
+          spacing={2}
+          width={{ xs: "100%", sm: "auto" }}
+          alignItems="center"
         >
-          Add Device
-        </Button>
+          <TextField
+            placeholder="Search devices..."
+            variant="outlined"
+            size="small"
+            fullWidth
+            disabled={!selectedFarmId}
+            value={searchQuery}
+            onChange={handleSearchChange}
+            sx={{
+              backgroundColor: "white",
+              borderRadius: 1,
+              flex: 1,
+              minWidth: { sm: "200px" },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
+            disabled={!selectedFarmId}
+            sx={{
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              borderRadius: 1,
+              textTransform: "none",
+              fontWeight: 500,
+              boxShadow: "none",
+              px: 2,
+              py: 1,
+              "&:hover": {
+                boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+              },
+            }}
+          >
+            Add Device
+          </Button>
+        </Stack>
       </Stack>
 
-      {/* Farm Selection and Search */}
-      <Stack
-        direction={isMediumScreen ? "column" : "row"}
-        spacing={2}
-        sx={{ mb: 3 }}
-        alignItems="stretch"
-      >
-        <FormControl sx={{ minWidth: { xs: "100%", md: 240 } }}>
+      {/* Farm Selection */}
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth sx={{ maxWidth: 300 }}>
           <InputLabel id="farm-select-label">Select Farm</InputLabel>
           <Select
             labelId="farm-select-label"
@@ -325,7 +358,6 @@ const DeviceListPage = () => {
             onChange={handleFarmChange}
             label="Select Farm"
             displayEmpty
-            fullWidth
           >
             {farms.length === 0 ? (
               <MenuItem disabled value="">
@@ -340,31 +372,7 @@ const DeviceListPage = () => {
             )}
           </Select>
         </FormControl>
-
-        <TextField
-          placeholder="Search devices..."
-          variant="outlined"
-          fullWidth
-          disabled={!selectedFarmId}
-          value={searchQuery}
-          onChange={handleSearchChange}
-          sx={{
-            backgroundColor: "white",
-            borderRadius: 1,
-            flex: { md: 1 },
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 1,
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Stack>
+      </Box>
 
       {/* Loading State */}
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
@@ -412,15 +420,11 @@ const DeviceListPage = () => {
             borderRadius: 2,
           }}
         >
-          <DevicesOtherIcon
-            sx={{ fontSize: 60, color: theme.palette.primary.light, mb: 2 }}
-          />
           <Typography
             variant="h6"
             color="text.secondary"
             gutterBottom
             align="center"
-            sx={{ px: 2 }}
           >
             Please select a farm to manage devices
           </Typography>
@@ -429,7 +433,7 @@ const DeviceListPage = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => navigate("/farms")}
+              onClick={() => navigate("/dashboard/farms")}
               sx={{ mt: 2 }}
             >
               Create a Farm First
@@ -442,203 +446,127 @@ const DeviceListPage = () => {
         </Box>
       )}
 
-      {/* Devices Grid */}
-      {selectedFarmId && filteredDevices.length === 0 && !isLoading ? (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            py: 8,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            color="text.secondary"
-            gutterBottom
-            align="center"
-          >
-            {searchQuery ? "No devices match your search" : "No devices found"}
-          </Typography>
-
-          {!searchQuery && (
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{ mt: 2 }}
-            >
-              Add Your First Device
-            </Button>
-          )}
-        </Box>
-      ) : (
-        selectedFarmId && (
-          <Grid container spacing={3}>
-            {filteredDevices.map((device) => (
-              <Grid item key={device.id} xs={12} sm={6} lg={4}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    position: "relative",
-                    transition: "all 0.3s ease",
-                    borderRadius: 2,
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-                    },
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, device.id)}
-                    sx={{ position: "absolute", top: 8, right: 8 }}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
-
-                  <CardContent sx={{ flexGrow: 1, pt: 3 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        mb: 1,
-                      }}
-                    >
-                      <Typography
-                        variant="h5"
-                        component="h2"
-                        gutterBottom
-                        noWrap
-                        sx={{
-                          pr: 4,
-                          fontSize: { xs: "1.25rem", sm: "1.5rem" },
-                        }}
-                      >
-                        {device.name}
-                      </Typography>
-                      <Chip
-                        icon={
-                          device.isActive ? <SignalIcon /> : <NoSignalIcon />
-                        }
-                        label={device.isActive ? "Active" : "Inactive"}
-                        size="small"
-                        color={device.isActive ? "success" : "error"}
-                        sx={{ mt: 0.5 }}
-                      />
-                    </Box>
-
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <Chip
-                        label={device.macAddress || "No MAC Address"}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          fontSize: "0.75rem",
-                          maxWidth: "100%",
-                          overflow: "hidden",
-                        }}
-                      />
-                    </Box>
-
-                    {device.location && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          mb: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                        noWrap
-                      >
-                        Location: {device.location}
-                      </Typography>
-                    )}
-
-                    <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                      <SensorsIcon
-                        fontSize="small"
-                        color="action"
-                        sx={{ mr: 0.5 }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {device.sensors?.length || 0} Sensors
-                      </Typography>
-                    </Box>
-
-                    {device.description && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          mt: 2,
-                          display: "-webkit-box",
-                          overflow: "hidden",
-                          WebkitBoxOrient: "vertical",
-                          WebkitLineClamp: 3,
-                        }}
-                      >
-                        {device.description}
-                      </Typography>
-                    )}
-                  </CardContent>
-
-                  <CardActions sx={{ p: 2, pt: 0, justifyContent: "flex-end" }}>
-                    <Button
-                      size="small"
-                      onClick={() => handleEditClick(device)}
-                    >
-                      View Details
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )
-      )}
-
-      {/* Device Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          elevation: 3,
-          sx: { width: 200 },
+      {/* Devices Table */}
+      <Paper
+        sx={{
+          width: "100%",
+          mb: 2,
+          borderRadius: 2,
+          overflow: "hidden",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         }}
       >
-        <MenuItem
-          onClick={() =>
-            handleEditClick(devices.find((d) => d.id === menuDeviceId))
-          }
-        >
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          Edit Device
-        </MenuItem>
-
-        <MenuItem
-          onClick={() =>
-            handleDeleteClick(devices.find((d) => d.id === menuDeviceId))
-          }
-          sx={{ color: theme.palette.error.main }}
-        >
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          Delete Device
-        </MenuItem>
-      </Menu>
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Device Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Farm</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Created At</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading && filteredDevices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body1">Loading devices...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : filteredDevices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Box sx={{ textAlign: "center" }}>
+                      <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {searchQuery
+                          ? "No devices match your search"
+                          : "No devices found"}
+                      </Typography>
+                      {!searchQuery && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          startIcon={<AddIcon />}
+                          onClick={() => setCreateDialogOpen(true)}
+                          sx={{
+                            borderRadius: 1,
+                            textTransform: "none",
+                            fontWeight: 500,
+                            boxShadow: "none",
+                            "&:hover": {
+                              boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                            },
+                          }}
+                        >
+                          Add Your First Device
+                        </Button>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredDevices.map((device) => (
+                  <TableRow key={device.id} hover>
+                    <TableCell>
+                      <Typography fontWeight={500}>{device.name}</Typography>
+                    </TableCell>
+                    <TableCell>{device.description || "-"}</TableCell>
+                    <TableCell>
+                      {device.farm?.name || getFarmName(device.farmId)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={device.isActive ? "Active" : "Inactive"}
+                        color={device.isActive ? "success" : "error"}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>{formatDate(device.createdAt)}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Tooltip title="View Sensors">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleViewSensors(device.id)}
+                          >
+                            <SensorsIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditClick(device)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(device)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Create Device Dialog */}
       <Dialog
@@ -647,15 +575,14 @@ const DeviceListPage = () => {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          elevation: 5,
+          elevation: 3,
           sx: { borderRadius: 2 },
         }}
       >
         <DialogTitle>Add New Device</DialogTitle>
         <DialogContent dividers>
           <DeviceForm
-            farmId={selectedFarmId}
-            farmName={getFarmName(selectedFarmId)}
+            initialData={{ farmId: selectedFarmId }}
             onSubmit={handleCreateDevice}
             onCancel={() => setCreateDialogOpen(false)}
             isLoading={isLoading}
@@ -670,23 +597,19 @@ const DeviceListPage = () => {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          elevation: 5,
+          elevation: 3,
           sx: { borderRadius: 2 },
         }}
       >
         <DialogTitle>Edit Device</DialogTitle>
         <DialogContent dividers>
-          {selectedDevice && (
-            <DeviceForm
-              initialData={selectedDevice}
-              farmId={selectedFarmId}
-              farmName={getFarmName(selectedFarmId)}
-              onSubmit={handleUpdateDevice}
-              onCancel={() => setEditDialogOpen(false)}
-              isLoading={isLoading}
-              isEdit
-            />
-          )}
+          <DeviceForm
+            initialData={selectedDevice}
+            onSubmit={handleUpdateDevice}
+            onCancel={() => setEditDialogOpen(false)}
+            isLoading={isLoading}
+            isEdit
+          />
         </DialogContent>
       </Dialog>
 
@@ -695,7 +618,7 @@ const DeviceListPage = () => {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         PaperProps={{
-          elevation: 5,
+          elevation: 3,
           sx: { borderRadius: 2 },
         }}
       >
@@ -706,7 +629,7 @@ const DeviceListPage = () => {
             action cannot be undone.
           </Typography>
         </DialogContent>
-        <Box sx={{ p: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={() => setDeleteDialogOpen(false)}
             disabled={isLoading}
@@ -721,7 +644,7 @@ const DeviceListPage = () => {
           >
             Delete
           </Button>
-        </Box>
+        </DialogActions>
       </Dialog>
     </Box>
   );

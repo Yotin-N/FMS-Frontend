@@ -353,18 +353,6 @@ const DashboardPage = () => {
             <Route path="/users" element={<UserListPage />} />
             <Route path="/users/create" element={<CreateUserPage />} />
             <Route path="/users/edit/:id" element={<EditUserPage />} />
-            <Route
-              path="/analytics"
-              element={
-                <Typography variant="h4">Analytics Placeholder</Typography>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <Typography variant="h4">Settings Placeholder</Typography>
-              }
-            />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Container>
