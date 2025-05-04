@@ -34,6 +34,7 @@ import DeviceListPage from "../device/DeviceListPage";
 import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
+import { useLocation } from "react-router-dom";
 const drawerWidth = 240;
 
 const DashboardPage = () => {
@@ -43,6 +44,24 @@ const DashboardPage = () => {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [open, setOpen] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    const pathname = location.pathname;
+
+    if (pathname.includes("/dashboard/farms")) {
+      setSelectedIndex(1);
+    } else if (
+      pathname.includes("/dashboard/devices") ||
+      (pathname === "/dashboard" && location.search.includes("farmId="))
+    ) {
+      setSelectedIndex(2);
+    } else if (pathname.includes("/dashboard/users")) {
+      setSelectedIndex(3);
+    } else if (pathname === "/dashboard" || pathname === "/dashboard/") {
+      setSelectedIndex(0);
+    }
+  }, [location]);
 
   // Adjust drawer when window size changes
   useEffect(() => {
