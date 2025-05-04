@@ -210,7 +210,7 @@ const FarmListPage = () => {
 
   // Navigate to devices for a specific farm
   const handleViewDevices = (farmId) => {
-    navigate(`/devices?farmId=${farmId}`);
+    navigate(`/dashboard/devices?farmId=${farmId}`);
   };
 
   // Close snackbar alerts

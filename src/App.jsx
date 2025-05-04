@@ -75,122 +75,68 @@ const AuthRoute = ({ children }) => {
   return isAuthenticated ? <Navigate to="/dashboard" /> : children;
 };
 
-// Route Configuration
-const AppRoutes = () => {
-  return (
-    <>
-      <ScrollToTop />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Default route - redirect to login or dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <AuthRoute>
-                <LoginPage />
-              </AuthRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <AuthRoute>
-                <RegisterPage />
-              </AuthRoute>
-            }
-          />
-
-          {/* Google OAuth Callback Route */}
-          <Route
-            path="/auth/google/callback"
-            element={<GoogleCallbackHandler />}
-          />
-
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard/*"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/farms/*"
-            element={
-              <ProtectedRoute>
-                <FarmListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/devices/*"
-            element={
-              <ProtectedRoute>
-                <DeviceListPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* User Management Routes */}
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <UserListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/users/create"
-            element={
-              <ProtectedRoute>
-                <CreateUserPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/users/edit/:id"
-            element={
-              <ProtectedRoute>
-                <EditUserPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* 404 Not Found */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </>
-  );
-};
-
-// Main App Component
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
         <AuthProvider>
-          {/* Navbar is outside the main content area */}
-          <Navbar />
-
-          {/* Main content area with top padding for navbar */}
           <Box
             component="main"
             sx={{
               flexGrow: 1,
-              paddingTop: 0,
               minHeight: "100vh",
               display: "flex",
               flexDirection: "column",
             }}
           >
-            <AppRoutes />
+            <Suspense fallback={<PageLoader />}>
+              <ScrollToTop />
+              <Routes>
+                {/* Default route - redirect to dashboard */}
+                <Route
+                  path="/"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+
+                {/* Auth Routes (outside dashboard layout) */}
+                <Route
+                  path="/login"
+                  element={
+                    <AuthRoute>
+                      <LoginPage />
+                    </AuthRoute>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <AuthRoute>
+                      <RegisterPage />
+                    </AuthRoute>
+                  }
+                />
+
+                {/* Google OAuth Callback */}
+                <Route
+                  path="/auth/google/callback"
+                  element={<GoogleCallbackHandler />}
+                />
+
+                {/* ALL protected pages under a SINGLE parent route */}
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* 404 Not Found */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
           </Box>
         </AuthProvider>
       </Router>
