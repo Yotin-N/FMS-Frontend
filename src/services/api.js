@@ -183,6 +183,16 @@ export const addFarmMember = async (farmId, userId) => {
   }
 };
 
+export const getFarmMembers = async (farmId) => {
+  try {
+    const response = await api.get(`/farms/${farmId}/members`);
+    return response.data;
+  } catch (error) {
+    console.error(`Get farm members error:`, error);
+    throw error;
+  }
+};
+
 export const removeFarmMember = async (farmId, userId) => {
   try {
     const response = await api.delete(`/farms/${farmId}/members/${userId}`);
@@ -376,6 +386,19 @@ export const resetUserPassword = async (userId) => {
     return response.data;
   } catch (error) {
     console.error(`Reset password for user ${userId} error:`, error);
+    throw error;
+  }
+};
+
+export const searchUsersByEmail = async (email, farmId) => {
+  try {
+    const params = { email };
+    if (farmId) params.farmId = farmId;
+
+    const response = await api.get("/users/search", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error searching users:", error);
     throw error;
   }
 };

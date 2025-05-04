@@ -115,6 +115,10 @@ const FarmListPage = () => {
     }
   };
 
+  const handleMembersUpdate = () => {
+    loadFarms();
+  };
+
   // Handle farm creation
   const handleCreateFarm = async (farmData) => {
     setIsLoading(true);
@@ -496,6 +500,7 @@ const FarmListPage = () => {
           onClose={() => setMembersDialogOpen(false)}
           farmId={selectedFarm.id}
           farmName={selectedFarm.name}
+          onUpdate={handleMembersUpdate}
         />
       )}
     </Box>

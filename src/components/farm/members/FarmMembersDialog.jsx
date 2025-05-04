@@ -1,4 +1,3 @@
-// src/components/farm/members/FarmMembersDialog.jsx - Handling UUID issue
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -15,6 +14,7 @@ import {
   ListItemSecondaryAction,
   Avatar,
   IconButton,
+  Autocomplete,
   TextField,
   InputAdornment,
   Divider,
@@ -33,26 +33,31 @@ import {
   Close as CloseIcon,
 } from "@mui/icons-material";
 import {
+  getAllUsers,
+  getFarmMembers,
   addFarmMember,
   removeFarmMember,
-  getAllUsers,
 } from "../../../services/api";
+import { alpha } from "@mui/material/styles";
 
-const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
+// Note: Add a new prop 'onUpdate' to update the parent component
+const FarmMembersDialog = ({ open, onClose, farmId, farmName, onUpdate }) => {
   const theme = useTheme();
 
   // States
   const [members, setMembers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [membersChanged, setMembersChanged] = useState(false);
 
-  // Load all users and farm members when dialog opens
+  // Load members and all users when dialog opens
   useEffect(() => {
     if (open && farmId) {
       loadFarmMembers();
@@ -60,126 +65,78 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     }
   }, [open, farmId]);
 
-  // Load all users to find user IDs
+  // Filter available users (not current members) based on search query
+  useEffect(() => {
+    if (!allUsers.length) return;
+
+    // Get array of member IDs for easy comparison
+    const memberIds = members.map((member) => member.id);
+
+    // Filter users who are not members and match the search query
+    const available = allUsers.filter(
+      (user) =>
+        !memberIds.includes(user.id) &&
+        (user.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+          `${user.firstName} ${user.lastName}`
+            .toLowerCase()
+            .includes(userSearchQuery.toLowerCase()))
+    );
+
+    setFilteredUsers(available);
+  }, [allUsers, members, userSearchQuery]);
+
+  // Load all users
   const loadAllUsers = async () => {
     setLoadingUsers(true);
     try {
-      const usersData = await getAllUsers();
-
-      // Log the response to debug
-      console.log("All users response:", usersData);
-
-      // Handle different response structures
-      let users = [];
-      if (usersData && Array.isArray(usersData)) {
-        users = usersData;
-      } else if (usersData && Array.isArray(usersData.data)) {
-        users = usersData.data;
-      }
-
-      setAllUsers(users);
+      const users = await getAllUsers();
+      setAllUsers(Array.isArray(users) ? users : []);
     } catch (err) {
       console.error("Error loading users:", err);
+      setError("Failed to load users. Please try again.");
     } finally {
       setLoadingUsers(false);
     }
   };
 
-  // Simulate loading farm members
-  // In real app, you would fetch this from backend
+  // Load farm members
   const loadFarmMembers = async () => {
     setIsLoading(true);
     setError(null);
 
-    // Mock implementation - in real app, replace with API call
-    setTimeout(() => {
-      const mockMembers = [
-        {
-          id: "1", // UUID in real implementation
-          email: "owner@example.com",
-          firstName: "John",
-          lastName: "Doe",
-          role: "ADMIN",
-          isOwner: true,
-        },
-        {
-          id: "2", // UUID in real implementation
-          email: "member@example.com",
-          firstName: "Jane",
-          lastName: "Smith",
-          role: "USER",
-          isOwner: false,
-        },
-      ];
+    try {
+      // The API returns an array of members directly
+      const membersList = await getFarmMembers(farmId);
 
-      setMembers(mockMembers);
+      // Since we don't know who the owner is from the API,
+      // we'll assume no one is the owner for now
+      const processedMembers = membersList.map((member) => ({
+        ...member,
+        isOwner: false, // Could be updated if you have owner information
+      }));
+
+      setMembers(processedMembers);
+    } catch (err) {
+      console.error("Error loading farm members:", err);
+      setError("Failed to load farm members. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
-  // Filter members based on search term
+  // Filter members based on search query
   const filteredMembers = members.filter(
     (member) =>
-      member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.email?.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
       `${member.firstName || ""} ${member.lastName || ""}`
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(memberSearchQuery.toLowerCase())
   );
 
-  // Handle email input change
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
-
-    // Clear error when typing
-    if (emailError) {
-      setEmailError("");
-    }
-  };
-
-  // Validate email
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(String(email).toLowerCase());
-  };
-
-  // Find user ID by email from loaded users
-  const findUserIdByEmail = (email) => {
-    const user = allUsers.find(
-      (user) => user.email && user.email.toLowerCase() === email.toLowerCase()
-    );
-    return user ? user.id : null;
-  };
-
-  // Handle add member
+  // Handle adding a member
   const handleAddMember = async () => {
-    // Validate email format
-    if (!email) {
-      setEmailError("Email is required");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setEmailError("Invalid email format");
-      return;
-    }
-
-    // Check if member already exists
-    if (
-      members.some(
-        (member) =>
-          member.email && member.email.toLowerCase() === email.toLowerCase()
-      )
-    ) {
-      setEmailError("User is already a member of this farm");
-      return;
-    }
-
-    // Find user ID from the email
-    const userId = findUserIdByEmail(email);
-    if (!userId) {
-      setEmailError(
-        "User not found. Please make sure the email is registered."
-      );
+    if (!selectedUser) {
+      setError("Please select a user first");
       return;
     }
 
@@ -187,17 +144,14 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     setError(null);
 
     try {
-      // Log the data we're sending to the API for debugging
-      console.log("Adding member with:", { farmId, userId });
+      await addFarmMember(farmId, selectedUser.id);
 
-      // Call API with proper UUID
-      await addFarmMember(farmId, userId);
-
-      // Reload farm members
+      // Reload farm members and reset selection
       await loadFarmMembers();
-
-      setEmail("");
+      setSelectedUser(null);
+      setUserSearchQuery("");
       setSuccess("Member added successfully!");
+      setMembersChanged(true); // Track that members have changed
     } catch (err) {
       console.error("Error adding member:", err);
       const errorMessage =
@@ -211,25 +165,19 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
     }
   };
 
-  // Handle remove member
+  // Handle removing a member
   const handleRemoveMember = async (memberId) => {
-    // Don't remove the owner
-    const member = members.find((m) => m.id === memberId);
-    if (member?.isOwner) {
-      setError("Cannot remove the farm owner");
-      return;
-    }
+    // We're skipping the isOwner check since we don't have that info
+    // but you could add it back if you do have a way to identify the owner
 
     setIsLoading(true);
     setError(null);
 
     try {
       await removeFarmMember(farmId, memberId);
-
-      // Reload farm members
       await loadFarmMembers();
-
       setSuccess("Member removed successfully!");
+      setMembersChanged(true); // Track that members have changed
     } catch (err) {
       console.error("Error removing member:", err);
       const errorMessage =
@@ -245,11 +193,17 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
 
   // Handle dialog close
   const handleClose = () => {
-    setEmail("");
-    setEmailError("");
-    setSearchTerm("");
+    // If members changed, call the onUpdate callback
+    if (membersChanged && typeof onUpdate === "function") {
+      onUpdate();
+    }
+
+    setMemberSearchQuery("");
+    setUserSearchQuery("");
+    setSelectedUser(null);
     setError(null);
     setSuccess(null);
+    setMembersChanged(false);
     onClose();
   };
 
@@ -295,32 +249,73 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
             Add a New Member
           </Typography>
 
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-            <TextField
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {/* FIXED ISSUE 1: Match button height by setting the same height and styling */}
+            <Autocomplete
               fullWidth
-              size="small"
-              label="Email Address"
-              value={email}
-              onChange={handleEmailChange}
-              error={!!emailError}
-              helperText={emailError}
-              placeholder="Enter email address"
-              disabled={isLoading || loadingUsers}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1,
-                },
+              value={selectedUser}
+              options={filteredUsers}
+              getOptionLabel={(option) =>
+                `${option.firstName} ${option.lastName} (${option.email})`
+              }
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderOption={(props, option) => (
+                <li {...props}>
+                  <Box sx={{ display: "flex", flexDirection: "column" }}>
+                    <Typography variant="body1">
+                      {option.firstName} {option.lastName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {option.email}
+                    </Typography>
+                  </Box>
+                </li>
+              )}
+              loading={loadingUsers}
+              onInputChange={(_, value) => setUserSearchQuery(value)}
+              onChange={(_, newValue) => {
+                setSelectedUser(newValue);
+                setUserSearchQuery("");
               }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Search users"
+                  placeholder="Search by name or email"
+                  size="medium"
+                  InputProps={{
+                    ...params.InputProps,
+                    style: { height: 40 },
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <>
+                        {loadingUsers ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              sx={{ flex: 1 }}
+              openOnFocus
+              disableClearable
             />
+
             <Button
               variant="contained"
               color="primary"
               startIcon={<PersonAddIcon />}
               onClick={handleAddMember}
-              disabled={isLoading || loadingUsers}
+              disabled={isLoading || !selectedUser}
               sx={{
+                height: 40, // Match Autocomplete height
                 whiteSpace: "nowrap",
-                py: 1,
                 borderRadius: 1,
                 textTransform: "none",
                 boxShadow: "none",
@@ -329,29 +324,19 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
               {isLoading ? "Adding..." : "Add Member"}
             </Button>
           </Box>
-
-          {loadingUsers && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 1, display: "block" }}
-            >
-              Loading users...
-            </Typography>
-          )}
         </Box>
 
         <Divider />
 
-        {/* Members List with Search */}
+        {/* Members List */}
         <Box sx={{ p: 3 }}>
           <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Search members..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filter members..."
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -385,16 +370,16 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
             </Box>
           )}
 
+          {/* FIXED ISSUE 3: Correctly show the loaded members */}
           {!isLoading && filteredMembers.length === 0 && (
             <Box sx={{ textAlign: "center", py: 3 }}>
               <Typography variant="body1" color="text.secondary">
-                {searchTerm
+                {memberSearchQuery
                   ? "No members match your search"
                   : "No members found"}
               </Typography>
             </Box>
           )}
-
           <List sx={{ width: "100%" }}>
             {filteredMembers.map((member) => (
               <ListItem
@@ -403,8 +388,13 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                 sx={{
                   borderRadius: 1,
                   mb: 1,
+                  backgroundColor: member.isOwner
+                    ? alpha(theme.palette.primary.light, 0.1)
+                    : "transparent",
                   "&:hover": {
-                    bgcolor: theme.palette.action.hover,
+                    bgcolor: member.isOwner
+                      ? alpha(theme.palette.primary.light, 0.15)
+                      : theme.palette.action.hover,
                   },
                 }}
               >
@@ -423,11 +413,10 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                 <ListItemText
                   primary={
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {`${member.firstName || ""} ${
-                        member.lastName || ""
-                      }`.trim() || "Unknown User"}
+                      {`${member.firstName} ${member.lastName}`}
                       {member.isOwner && (
                         <Chip
+                          icon={<AdminIcon style={{ fontSize: 16 }} />}
                           label="Owner"
                           size="small"
                           color="primary"
@@ -436,27 +425,34 @@ const FarmMembersDialog = ({ open, onClose, farmId, farmName }) => {
                       )}
                     </Box>
                   }
-                  secondary={member.email || ""}
+                  secondary={member.email}
                 />
 
                 <ListItemSecondaryAction>
-                  <Tooltip
-                    title={
-                      member.isOwner ? "Cannot remove owner" : "Remove member"
-                    }
-                  >
-                    <span>
+                  {member.isOwner ? (
+                    <Tooltip title="Farm owner cannot be removed">
+                      <span>
+                        <IconButton
+                          edge="end"
+                          disabled={true}
+                          sx={{ color: theme.palette.text.disabled }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title="Remove member">
                       <IconButton
                         edge="end"
-                        aria-label="delete"
-                        onClick={() => handleRemoveMember(member.id)}
-                        disabled={member.isOwner || isLoading}
                         color="error"
+                        onClick={() => handleRemoveMember(member.id)}
+                        disabled={isLoading}
                       >
                         <DeleteIcon />
                       </IconButton>
-                    </span>
-                  </Tooltip>
+                    </Tooltip>
+                  )}
                 </ListItemSecondaryAction>
               </ListItem>
             ))}
