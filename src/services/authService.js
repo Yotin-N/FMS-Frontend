@@ -9,12 +9,9 @@ export const googleOAuth = {
   startGoogleLogin: () => {
     const apiBaseUrl =
       import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-    const redirectUri = encodeURIComponent(
-      `${window.location.origin}/auth/google/callback`
-    );
 
     // Redirect to backend with frontend callback URL
-    window.location.href = `${apiBaseUrl}/auth/google?redirect_uri=${redirectUri}`;
+    window.location.href = `${apiBaseUrl}/auth/google`;
   },
 
   // Check OAuth status - call this periodically after initiating flow
