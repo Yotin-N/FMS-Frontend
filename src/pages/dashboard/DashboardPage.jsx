@@ -23,9 +23,9 @@ import {
   Agriculture as AgricultureIcon,
   Devices as DevicesIcon,
   People as PeopleIcon,
-  BarChart as BarChartIcon,
-  Settings as SettingsIcon,
 } from "@mui/icons-material";
+
+import SensorsIcon from "@mui/icons-material/Sensors";
 
 import useAuth from "../../hooks/useAuth";
 import Navbar from "../../components/layout/Navbar";
@@ -35,6 +35,8 @@ import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
 import { useLocation } from "react-router-dom";
+import SensorListPage from "../sensor/SensorListPage";
+import SensorReadingsPage from "../sensor/SensorReadingsPage";
 const drawerWidth = 240;
 
 const DashboardPage = () => {
@@ -90,6 +92,7 @@ const DashboardPage = () => {
     { text: "Dashboard", icon: <DashboardIcon />, path: "" },
     { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms" },
     { text: "Device Management", icon: <DevicesIcon />, path: "/devices" },
+    { text: "Sensor", icon: <SensorsIcon />, path: "/sensors" },
     { text: "User Management", icon: <PeopleIcon />, path: "/users" },
   ];
 
@@ -350,6 +353,11 @@ const DashboardPage = () => {
             <Route path="/" element={renderDashboardOverview()} />
             <Route path="/farms/*" element={<FarmListPage />} />
             <Route path="/devices/*" element={<DeviceListPage />} />
+            <Route path="/sensors" element={<SensorListPage />} />
+            <Route
+              path="/sensors/:id/readings"
+              element={<SensorReadingsPage />}
+            />
             <Route path="/users" element={<UserListPage />} />
             <Route path="/users/create" element={<CreateUserPage />} />
             <Route path="/users/edit/:id" element={<EditUserPage />} />

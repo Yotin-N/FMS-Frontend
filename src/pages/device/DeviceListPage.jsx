@@ -257,11 +257,6 @@ const DeviceListPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  // Navigate to sensors for a specific device
-  const handleViewSensors = (deviceId) => {
-    navigate(`/dashboard/devices/${deviceId}/sensors`);
-  };
-
   // Close snackbar alerts
   const handleAlertClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -358,11 +353,17 @@ const DeviceListPage = () => {
             onChange={handleFarmChange}
             label="Select Farm"
             displayEmpty
+            renderValue={(selected) => {
+              if (!selected || selected.length === 0) {
+                return null;
+              }
+
+              const farm = farms.find((f) => f.id === selected);
+              return farm ? farm.name : "";
+            }}
           >
             {farms.length === 0 ? (
-              <MenuItem disabled value="">
-                <em>No farms available</em>
-              </MenuItem>
+              <MenuItem disabled value=""></MenuItem>
             ) : (
               farms.map((farm) => (
                 <MenuItem key={farm.id} value={farm.id}>
@@ -535,7 +536,11 @@ const DeviceListPage = () => {
                           <IconButton
                             size="small"
                             color="primary"
-                            onClick={() => handleViewSensors(device.id)}
+                            onClick={() =>
+                              navigate(
+                                `/dashboard/sensors?deviceId=${device.id}`
+                              )
+                            }
                           >
                             <SensorsIcon fontSize="small" />
                           </IconButton>
