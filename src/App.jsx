@@ -42,6 +42,16 @@ const PageLoader = () => (
   </Box>
 );
 
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
 // Scroll to top on route change
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -51,17 +61,6 @@ const ScrollToTop = () => {
   }, [pathname]);
 
   return null;
-};
-
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
-  return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 // Auth Routes - Redirect to dashboard if already authenticated

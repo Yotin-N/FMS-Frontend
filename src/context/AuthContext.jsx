@@ -31,13 +31,13 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  // Add this to AuthContext.jsx
   const login = async (credentials) => {
     setIsLoading(true);
     try {
       const response = await loginUser(credentials);
 
       // Store user in state and localStorage
-      // Only keep non-sensitive data
       const userData = {
         id: response.user.id,
         email: response.user.email,
@@ -45,9 +45,10 @@ export const AuthProvider = ({ children }) => {
         token: response.accessToken,
       };
 
+      localStorage.setItem("farmUser", JSON.stringify(userData));
+
       setUser(userData);
       setIsAuthenticated(true);
-      localStorage.setItem("farmUser", JSON.stringify(userData));
 
       setIsLoading(false);
       return { success: true };

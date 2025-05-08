@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from "axios";
 
 // Create an axios instance with defaults
@@ -12,21 +11,22 @@ const api = axios.create({
   },
 });
 
-api.interceptors.response.use(
-  (response) => {
-    return response;
+api.interceptors.request.use(
+  (config) => {
+    const userData = localStorage.getItem("farmUser");
+    if (userData) {
+      try {
+        const { token } = JSON.parse(userData);
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+      }
+    }
+    return config;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem("farmUser");
-
-      window.location.href = "/login";
-
-      localStorage.setItem(
-        "authError",
-        "Your seesion has expired. Please log in again."
-      );
-    }
     return Promise.reject(error);
   }
 );
