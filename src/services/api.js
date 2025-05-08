@@ -12,23 +12,21 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor to add auth token to requests
-api.interceptors.request.use(
-  (config) => {
-    const storedUser = localStorage.getItem("farmUser");
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if (user && user.token) {
-          config.headers.Authorization = `Bearer ${user.token}`;
-        }
-      } catch (error) {
-        console.error("Error parsing user from localStorage:", error);
-      }
-    }
-    return config;
+api.interceptors.response.use(
+  (response) => {
+    return response;
   },
   (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("farmUser");
+
+      window.location.href = "/login";
+
+      localStorage.setItem(
+        "authError",
+        "Your seesion has expired. Please log in again."
+      );
+    }
     return Promise.reject(error);
   }
 );

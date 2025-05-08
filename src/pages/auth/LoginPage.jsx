@@ -44,11 +44,15 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Check for error messages from redirects (like failed Google login)
   useEffect(() => {
+    const authError = localStorage.getItem("authError");
+    if (authError) {
+      setError(authError);
+      localStorage.removeItem("authError");
+    }
+
     if (location.state?.error) {
       setError(location.state.error);
-      // Clear the location state
       navigate(location.pathname, { replace: true });
     }
   }, [location, navigate]);

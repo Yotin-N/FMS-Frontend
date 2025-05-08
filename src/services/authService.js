@@ -10,14 +10,15 @@ export const googleOAuth = {
     const apiBaseUrl =
       import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
+    localStorage.setItem("googleLoginPending", true);
+
     // Redirect to backend with frontend callback URL
     window.location.href = `${apiBaseUrl}/auth/google`;
   },
 
-  // Check OAuth status - call this periodically after initiating flow
-  checkGoogleAuthStatus: async (authCode) => {
+  checkGoogleAuthStatus: async () => {
     try {
-      const response = await api.get(`/auth/google/status?code=${authCode}`);
+      const response = await api.get("/auth/google/status");
       return response.data;
     } catch (error) {
       console.error("Error checking Google auth status:", error);
@@ -25,7 +26,6 @@ export const googleOAuth = {
     }
   },
 
-  // Process Google OAuth callback
   handleCallback: async (code) => {
     try {
       const response = await api.post("/auth/google/callback", { code });
@@ -36,7 +36,6 @@ export const googleOAuth = {
     }
   },
 
-  // Manual completion of OAuth flow (if redirect doesn't work)
   completeGoogleAuth: async () => {
     try {
       const response = await api.post("/auth/google/complete");

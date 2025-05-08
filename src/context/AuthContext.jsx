@@ -89,11 +89,13 @@ export const AuthProvider = ({ children }) => {
     navigate("/login");
   };
 
-  // Method to update the user data (used after successful OAuth)
   const updateUserData = (userData) => {
     // Make sure we don't store sensitive data
-    // eslint-disable-next-line no-unused-vars
-    const { password, ...safeUserData } = userData;
+    const safeUserData = {
+      id: userData.id,
+      token: userData.token,
+      // Add any other necessary user data
+    };
 
     setUser(safeUserData);
     setIsAuthenticated(true);

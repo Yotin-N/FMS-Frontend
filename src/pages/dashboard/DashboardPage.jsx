@@ -39,6 +39,14 @@ import SensorListPage from "../sensor/SensorListPage";
 import SensorReadingsPage from "../sensor/SensorReadingsPage";
 const drawerWidth = 240;
 
+const fullMenuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, path: "" },
+  { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms" },
+  { text: "Device Management", icon: <DevicesIcon />, path: "/devices" },
+  { text: "Sensor", icon: <SensorsIcon />, path: "/sensors" },
+  { text: "User Management", icon: <PeopleIcon />, path: "/users" },
+];
+
 const DashboardPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -47,25 +55,48 @@ const DashboardPage = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [open, setOpen] = useState(true);
   const location = useLocation();
+  const [menuItems, setMenuItems] = useState([]);
+
+  useEffect(() => {
+    const filteredItems = fullMenuItems.filter((item) => {
+      // Show User Management only to admins
+      if (item.text === "User Management") {
+        return user && user.role === "ADMIN";
+      }
+      // Show all other items to everyone
+      return true;
+    });
+
+    setMenuItems(filteredItems);
+  }, [user]);
 
   useEffect(() => {
     const pathname = location.pathname;
 
     if (pathname.includes("/dashboard/farms")) {
-      setSelectedIndex(1);
+      const farmIndex = menuItems.findIndex((item) => item.path === "/farms");
+      setSelectedIndex(farmIndex !== -1 ? farmIndex : 0);
     } else if (
       pathname.includes("/dashboard/devices") ||
       (pathname === "/dashboard" && location.search.includes("farmId="))
     ) {
-      setSelectedIndex(2);
+      const deviceIndex = menuItems.findIndex(
+        (item) => item.path === "/devices"
+      );
+      setSelectedIndex(deviceIndex !== -1 ? deviceIndex : 0);
+    } else if (pathname.includes("/dashboard/sensors")) {
+      const sensorIndex = menuItems.findIndex(
+        (item) => item.path === "/sensors"
+      );
+      setSelectedIndex(sensorIndex !== -1 ? sensorIndex : 0);
     } else if (pathname.includes("/dashboard/users")) {
-      setSelectedIndex(3);
+      const userIndex = menuItems.findIndex((item) => item.path === "/users");
+      setSelectedIndex(userIndex !== -1 ? userIndex : 0);
     } else if (pathname === "/dashboard" || pathname === "/dashboard/") {
       setSelectedIndex(0);
     }
-  }, [location]);
+  }, [location, menuItems]);
 
-  // Adjust drawer when window size changes
   useEffect(() => {
     const handleResize = () => {
       setOpen(window.innerWidth > 900);
@@ -87,14 +118,6 @@ const DashboardPage = () => {
     setSelectedIndex(index);
     navigate(`/dashboard${path}`);
   };
-
-  const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "" },
-    { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms" },
-    { text: "Device Management", icon: <DevicesIcon />, path: "/devices" },
-    { text: "Sensor", icon: <SensorsIcon />, path: "/sensors" },
-    { text: "User Management", icon: <PeopleIcon />, path: "/users" },
-  ];
 
   // Dashboard overview content
   const renderDashboardOverview = () => (
@@ -358,7 +381,16 @@ const DashboardPage = () => {
               path="/sensors/:id/readings"
               element={<SensorReadingsPage />}
             />
-            <Route path="/users" element={<UserListPage />} />
+            <Route
+              path="/users/*"
+              element={
+                user && user.role === "ADMIN" ? (
+                  <UserListPage />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
             <Route path="/users/create" element={<CreateUserPage />} />
             <Route path="/users/edit/:id" element={<EditUserPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

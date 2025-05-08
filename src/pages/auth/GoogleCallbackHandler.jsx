@@ -19,6 +19,8 @@ const GoogleCallbackHandler = () => {
   const theme = useTheme();
   const { isAuthenticated } = useAuth();
 
+  const { updateUserData } = useAuth();
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [manualStepsNeeded, setManualStepsNeeded] = useState(false);
@@ -48,6 +50,48 @@ const GoogleCallbackHandler = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const processCallback = async () => {
+      setIsLoading(true);
+      console.log("Current URL:", window.location.href); // Add for debugging
+      
+      try {
+        // Extract token from URL parameters
+        const searchParams = new URLSearchParams(location.search);
+        const token = searchParams.get("token");
+        const userId = searchParams.get("userId");
+        
+        console.log("Token:", token); // Add for debugging
+        console.log("UserId:", userId); // Add for debugging
+        
+        if (!token) {
+          throw new Error("No authentication token received");
+        }
+        
+        // Create user data object for auth context
+        const userData = {
+          id: userId,
+          token: token,
+        };
+        
+        // Update authentication state
+        updateUserData(userData);
+        
+        // Remove pending flag and redirect to dashboard
+        localStorage.removeItem("googleLoginPending");
+        navigate("/dashboard");
+      } catch (err) {
+        console.error("Error processing Google callback:", err);
+        setError("Authentication failed. Please try again.");
+        setIsLoading(false);
+      }
+    };
+  
+    processCallback();
+  }, [location, navigate, updateUserData]);
+
+
 
   useEffect(() => {
     const completeAuth = async () => {
