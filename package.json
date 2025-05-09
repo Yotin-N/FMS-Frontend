@@ -23,6 +23,7 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^15.5.1",
     "react-router-dom": "^6.30.0",
+    "rechart": "^0.0.1",
     "recharts": "^2.15.3"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
-/* eslint-disable no-unused-vars */
+"use client";
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -8,10 +9,6 @@ import {
   Paper,
   Card,
   CardContent,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   LinearProgress,
   Alert,
   IconButton,
@@ -21,20 +18,24 @@ import {
   Toolbar,
   List,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
   useMediaQuery,
-  Divider,
+  ListItemButton,
+  Avatar,
+  Tabs,
+  Tab,
 } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import WarningIcon from "@mui/icons-material/Warning";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import ThermostatIcon from "@mui/icons-material/Thermostat";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AgricultureIcon from "@mui/icons-material/Agriculture";
 import DevicesIcon from "@mui/icons-material/Devices";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import PeopleIcon from "@mui/icons-material/People";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import LightbulbIcon from "@mui/icons-material/Lightbulb";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { format, parseISO } from "date-fns";
 import {
   AreaChart,
@@ -67,6 +68,7 @@ const DashboardContent = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const queryParams = new URLSearchParams(location.search);
   const initialFarmId = queryParams.get("farmId");
@@ -78,14 +80,30 @@ const DashboardContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState("24");
+  const [selectedTab, setSelectedTab] = useState(0);
   const [notifications] = useState([
     { id: 1, message: "Warning pH: value exceeds limit", type: "warning" },
     { id: 2, message: "Warning DO: low oxygen levels", type: "warning" },
+    { id: 3, message: "Warning pH: value exceeds limit", type: "warning" },
   ]);
   const [suggestions] = useState([
     { id: 1, message: "Adjust pH levels to improve water quality" },
     { id: 2, message: "Increase aeration to boost DO levels" },
+    { id: 3, message: "Warning pH: value exceeds limit" },
   ]);
+
+  // Make sure we have fallback data if real data is empty
+  useEffect(() => {
+    if (selectedFarmId && chartData.length === 0 && !isLoading) {
+      // Create default empty chart data to maintain layout
+      const defaultChartTypes = ["DO", "pH", "SALT", "TDS"];
+      const defaultChartData = defaultChartTypes.map((type) => ({
+        type,
+        data: [], // Empty data
+      }));
+      setChartData(defaultChartData);
+    }
+  }, [selectedFarmId, chartData, isLoading]);
 
   useEffect(() => {
     loadFarms();
@@ -195,17 +213,21 @@ const DashboardContent = () => {
 
   const getSensorTypeColor = (type) => {
     const colorMap = {
-      pH: theme.palette.info.main,
-      DO: theme.palette.success.main,
-      Temperature: theme.palette.error.main,
-      TempA: theme.palette.error.main,
-      TempB: theme.palette.error.main,
-      TempC: theme.palette.error.main,
-      Saltlinity: theme.palette.primary.main,
-      NHx: theme.palette.warning.main,
-      EC: theme.palette.secondary.main,
-      TDS: theme.palette.success.light,
-      ORP: theme.palette.info.light,
+      pH: "#4caf50",
+      DO: "#ff9800",
+      Temperature: "#f44336",
+      TempA: "#f44336",
+      TempB: "#f44336",
+      TempC: "#f44336",
+      SALT: "#2196f3",
+      Saltlinity: "#2196f3",
+      NHx: "#9c27b0",
+      NH3: "#9c27b0",
+      EC: "#00bcd4",
+      TDS: "#8bc34a",
+      ORP: "#3f51b5",
+      NO2: "#673ab7",
+      NO: "#673ab7",
     };
     return colorMap[type] || theme.palette.grey[500];
   };
@@ -216,65 +238,94 @@ const DashboardContent = () => {
     return format(date, "HH:mm");
   };
 
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+  };
+
+  // Mock data for temperature cards
+  const temperatureData = {
+    surface: { value: "22", unit: "C°" },
+    base: { value: "15", unit: "C°" },
+  };
+
+  // Get the parameter names for tabs
+  const parameterNames = dashboardData?.averages
+    ? Object.keys(dashboardData.averages)
+    : ["pH", "DO", "SALT", "TDS", "EC", "NH3", "NO2"];
+
+  // Time range buttons
+  const timeRangeButtons = [
+    { label: "24h", value: "24" },
+    { label: "7d", value: "168" },
+    { label: "30d", value: "720" },
+  ];
+
   return (
-    <Box sx={{ maxWidth: "lg", mx: "auto" }}>
-      {/* Top Bar */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <FormControl sx={{ minWidth: 120 }}>
-            <InputLabel id="farm-select-label">Farm</InputLabel>
-            <Select
-              labelId="farm-select-label"
-              value={selectedFarmId}
-              onChange={handleFarmChange}
-              label="Farm"
-              size="small"
-            >
-              {farms.length === 0 ? (
-                <MenuItem disabled value="">
-                  No farms available
-                </MenuItem>
-              ) : (
-                farms.map((farm) => (
-                  <MenuItem key={farm.id} value={farm.id}>
-                    {farm.name}
-                  </MenuItem>
-                ))
-              )}
-            </Select>
-          </FormControl>
-          <Typography variant="body2" color="text.secondary">
-            Day: {formatDateTime(dashboardData?.latestTimestamp)} Last Update:{" "}
-            {formatTime(dashboardData?.latestTimestamp)}
-          </Typography>
-        </Box>
-        <IconButton
-          color="primary"
-          onClick={handleRefresh}
-          disabled={isLoading || !selectedFarmId}
-        >
-          <RefreshIcon />
-        </IconButton>
-      </Box>
-
-      {/* Loading State */}
+    <Box sx={{ width: "100%", px: { xs: 0, sm: 0 } }}>
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
-
-      {/* Error Display */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
-      {/* No Farm Selected State */}
+      {/* Farm selection and time range controls */}
+      {farms.length > 0 && (
+        <Box
+          sx={{
+            mb: 3,
+            display: "flex",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ minWidth: 200 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Farm
+            </Typography>
+            <select
+              value={selectedFarmId}
+              onChange={handleFarmChange}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "4px",
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+              }}
+            >
+              {farms.map((farm) => (
+                <option key={farm.id} value={farm.id}>
+                  {farm.name}
+                </option>
+              ))}
+            </select>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Time Range
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {timeRangeButtons.map((button) => (
+                <Button
+                  key={button.value}
+                  variant={
+                    timeRange === button.value ? "contained" : "outlined"
+                  }
+                  size="small"
+                  onClick={() => handleTimeRangeChange(button.value)}
+                  sx={{ minWidth: "60px" }}
+                >
+                  {button.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {!selectedFarmId && !isLoading && (
         <Box
           sx={{
@@ -298,132 +349,418 @@ const DashboardContent = () => {
         </Box>
       )}
 
-      {/* Dashboard Content */}
-      {selectedFarmId && dashboardData && (
-        <>
-          {/* Sensor Cards */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {dashboardData.averages &&
-              Object.entries(dashboardData.averages).map(([type, data]) => {
-                const value = data.average ? data.average.toFixed(1) : "N/A";
-                const unit = data.unit || "";
-
-                return (
-                  <Grid item xs={6} sm={4} md={2} key={type}>
-                    <Card
-                      sx={{
-                        bgcolor: getSensorTypeColor(type),
-                        color: "white",
-                        borderRadius: 2,
-                        p: 1,
-                        textAlign: "center",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                      }}
-                    >
-                      <CardContent sx={{ p: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {type}
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {value} {unit}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-          </Grid>
-
-          {/* Sensor Charts */}
-          <Box sx={{ maxHeight: "600px", overflowY: "auto", pr: 1 }}>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-              {["24", "168", "720"].map((range) => (
-                <Button
-                  key={range}
-                  variant={timeRange === range ? "contained" : "outlined"}
-                  onClick={() => handleTimeRangeChange(range)}
-                  size="small"
-                  sx={{ borderRadius: 2, mx: 1 }}
+      {selectedFarmId && (
+        <Grid
+          container
+          spacing={3}
+          sx={{ width: "100%", m: 0, minHeight: "calc(100vh - 100px)" }}
+        >
+          {/* Left Column - 30% */}
+          <Grid item xs={12} md={4}>
+            {/* Date Time Card */}
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  {range === "24" ? "Day" : range === "168" ? "Week" : "Month"}
-                </Button>
-              ))}
-            </Box>
-            {chartData.map((sensorTypeData) => (
-              <Paper
-                key={sensorTypeData.type}
-                sx={{
-                  p: 2,
-                  mb: 3,
-                  borderRadius: 2,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                  {sensorTypeData.type.toUpperCase()} Chart
-                </Typography>
-                {sensorTypeData.data.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={sensorTypeData.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis
-                        dataKey="time"
-                        tickFormatter={formatChartDate}
-                        stroke="#888"
-                      />
-                      <YAxis stroke="#888" />
-                      <Tooltip
-                        formatter={(value) => [
-                          value.toFixed(2),
-                          sensorTypeData.type,
-                        ]}
-                        labelFormatter={formatChartDate}
-                        contentStyle={{
-                          backgroundColor: "rgba(255, 255, 255, 0.9)",
-                          border: "1px solid #ddd",
-                          borderRadius: 4,
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke={getSensorTypeColor(sensorTypeData.type)}
-                        fill={getSensorTypeColor(sensorTypeData.type)}
-                        fillOpacity={0.3}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: 200,
-                    }}
-                  >
-                    <Typography color="text.secondary">
-                      No data available for this time range
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Last Update
+                    </Typography>
+                    <Typography variant="h6">
+                      {formatDateTime(dashboardData?.latestTimestamp)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatTime(dashboardData?.latestTimestamp)}
                     </Typography>
                   </Box>
-                )}
-              </Paper>
-            ))}
-            {chartData.length === 0 && (
-              <Paper
-                sx={{
-                  p: 3,
-                  borderRadius: 2,
-                  textAlign: "center",
-                }}
-              >
-                <Typography variant="body1" color="text.secondary">
-                  No sensor data available for charts.
+                  <IconButton
+                    color="primary"
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Exceeded Values Card */}
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Exceeded Values
                 </Typography>
-              </Paper>
-            )}
-          </Box>
-        </>
+                <List sx={{ p: 0 }}>
+                  {dashboardData?.averages &&
+                    Object.entries(dashboardData.averages)
+                      .filter(([_, data]) => data.average > 70)
+                      .map(([type, data]) => (
+                        <ListItem key={type} sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <Avatar
+                              sx={{
+                                bgcolor: getSensorTypeColor(type),
+                                width: 32,
+                                height: 32,
+                              }}
+                            >
+                              <WarningIcon sx={{ fontSize: 18 }} />
+                            </Avatar>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={type}
+                            secondary={`${data.average.toFixed(1)} ${
+                              data.unit || ""
+                            }`}
+                            primaryTypographyProps={{ fontWeight: 500 }}
+                          />
+                        </ListItem>
+                      ))}
+                  {dashboardData?.averages &&
+                    Object.entries(dashboardData.averages).filter(
+                      ([_, data]) => data.average > 70
+                    ).length === 0 && (
+                      <Box sx={{ p: 2, textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No exceeded values
+                        </Typography>
+                      </Box>
+                    )}
+                </List>
+              </CardContent>
+            </Card>
+
+            {/* Active Sensors Card */}
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Active Sensors
+                </Typography>
+                <List sx={{ p: 0 }}>
+                  {dashboardData?.averages &&
+                    Object.entries(dashboardData.averages).map(
+                      ([type, data]) => (
+                        <ListItem key={type} sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <Avatar
+                              sx={{
+                                bgcolor: getSensorTypeColor(type),
+                                width: 32,
+                                height: 32,
+                              }}
+                            >
+                              <ThermostatIcon sx={{ fontSize: 18 }} />
+                            </Avatar>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={type}
+                            secondary={`${data.average.toFixed(1)} ${
+                              data.unit || ""
+                            }`}
+                            primaryTypographyProps={{ fontWeight: 500 }}
+                          />
+                        </ListItem>
+                      )
+                    )}
+                  {!dashboardData?.averages ||
+                    (Object.keys(dashboardData.averages).length === 0 && (
+                      <Box sx={{ p: 2, textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No active sensors
+                        </Typography>
+                      </Box>
+                    ))}
+                </List>
+              </CardContent>
+            </Card>
+
+            {/* Notifications Card */}
+            <Card
+              sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+            >
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Notifications
+                </Typography>
+                <List sx={{ p: 0 }}>
+                  {notifications.map((notification) => (
+                    <ListItem key={notification.id} sx={{ px: 0, py: 1 }}>
+                      <ListItemIcon sx={{ minWidth: 40 }}>
+                        <Avatar
+                          sx={{ bgcolor: "error.main", width: 32, height: 32 }}
+                        >
+                          <WarningIcon sx={{ fontSize: 18 }} />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={notification.message}
+                        secondary="2 hours ago"
+                        primaryTypographyProps={{ fontWeight: 500 }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Right Column - 70% */}
+          <Grid
+            item
+            xs={12}
+            md={8}
+            sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+          >
+            {/* Sensor Values Cards */}
+            <Card
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                width: "100%",
+              }}
+            >
+              <CardContent>
+                <Grid container spacing={2} sx={{ width: "100%" }}>
+                  {dashboardData?.averages &&
+                    Object.entries(dashboardData.averages).map(
+                      ([type, data]) => (
+                        <Grid item xs={6} sm={4} md={3} key={type}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              bgcolor: getSensorTypeColor(type),
+                              color: "white",
+                              textAlign: "center",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {type}
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                              {data.average ? data.average.toFixed(1) : "N/A"}{" "}
+                              {data.unit || ""}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )
+                    )}
+                  {(!dashboardData?.averages ||
+                    Object.keys(dashboardData.averages).length === 0) && (
+                    <Grid item xs={12}>
+                      <Box
+                        sx={{
+                          p: 4,
+                          textAlign: "center",
+                          bgcolor: theme.palette.grey[100],
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography variant="body1" color="text.secondary">
+                          No sensor data available
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Charts Section */}
+            <Box
+              sx={{
+                flexGrow: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                width: "100%",
+                mr: 0,
+                ml: 0,
+                pl: 0,
+                pr: 0,
+              }}
+            >
+              {chartData.length > 0 ? (
+                chartData.map((sensorTypeData) => (
+                  <Card
+                    key={sensorTypeData.type}
+                    sx={{
+                      mb: 3,
+                      borderRadius: 2,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                      width: "100%",
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, width: "100%" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mb: 2,
+                        }}
+                      >
+                        <Typography variant="h6">
+                          {sensorTypeData.type.toUpperCase()} Chart
+                        </Typography>
+                        <IconButton size="small">
+                          <MoreHorizIcon />
+                        </IconButton>
+                      </Box>
+                      {sensorTypeData.data && sensorTypeData.data.length > 0 ? (
+                        <Box sx={{ width: "100%", height: 200 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={sensorTypeData.data}>
+                              <defs>
+                                <linearGradient
+                                  id={`gradient-${sensorTypeData.type}`}
+                                  x1="0"
+                                  y1="0"
+                                  x2="0"
+                                  y2="1"
+                                >
+                                  <stop
+                                    offset="5%"
+                                    stopColor={getSensorTypeColor(
+                                      sensorTypeData.type
+                                    )}
+                                    stopOpacity={0.8}
+                                  />
+                                  <stop
+                                    offset="95%"
+                                    stopColor={getSensorTypeColor(
+                                      sensorTypeData.type
+                                    )}
+                                    stopOpacity={0.1}
+                                  />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#f0f0f0"
+                                vertical={false}
+                              />
+                              <XAxis
+                                dataKey="time"
+                                tickFormatter={formatChartDate}
+                                stroke="#888"
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis
+                                stroke="#888"
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <Tooltip
+                                formatter={(value) => [
+                                  value.toFixed(2),
+                                  sensorTypeData.type,
+                                ]}
+                                labelFormatter={formatChartDate}
+                                contentStyle={{
+                                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                                  border: "1px solid #ddd",
+                                  borderRadius: 4,
+                                }}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="value"
+                                stroke={getSensorTypeColor(sensorTypeData.type)}
+                                fill={`url(#gradient-${sensorTypeData.type})`}
+                                strokeWidth={2}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: 200,
+                            bgcolor: "action.hover",
+                            borderRadius: 1,
+                            width: "100%",
+                          }}
+                        >
+                          <Typography color="text.secondary">
+                            No data available for this time range
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card
+                  sx={{
+                    mb: 3,
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    width: "100%",
+                  }}
+                >
+                  <CardContent sx={{ p: 2, width: "100%" }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: 200,
+                        bgcolor: "action.hover",
+                        borderRadius: 1,
+                        width: "100%",
+                      }}
+                    >
+                      <Typography color="text.secondary" gutterBottom>
+                        No chart data available
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={handleRefresh}
+                        size="small"
+                        sx={{ mt: 1 }}
+                      >
+                        Refresh Data
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
       )}
     </Box>
   );
@@ -437,7 +774,7 @@ const DashboardPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(!isMobile);
 
   useEffect(() => {
     const handleResize = () => {
@@ -474,16 +811,6 @@ const DashboardPage = () => {
     { text: "User Management", icon: <PeopleIcon />, path: "/users" },
   ];
 
-  const notifications = [
-    { id: 1, message: "Warning pH: value exceeds limit", type: "warning" },
-    { id: 2, message: "Warning DO: low oxygen levels", type: "warning" },
-  ];
-
-  const suggestions = [
-    { id: 1, message: "Adjust pH levels to improve water quality" },
-    { id: 2, message: "Increase aeration to boost DO levels" },
-  ];
-
   const handleListItemClick = (index, path) => {
     setSelectedIndex(index);
     navigate(`/dashboard${path}`);
@@ -496,8 +823,9 @@ const DashboardPage = () => {
 
       {/* Sidebar */}
       <Drawer
-        variant="permanent"
+        variant={isMobile ? "temporary" : "permanent"}
         open={open}
+        onClose={isMobile ? toggleDrawer : undefined}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -514,7 +842,7 @@ const DashboardPage = () => {
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: "false" }}>
+        <Box sx={{ overflow: "auto" }}>
           <List>
             {menuItems.map((item, index) => (
               <ListItem
@@ -579,10 +907,11 @@ const DashboardPage = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 0, sm: 1, md: 2 },
           pt: 0,
           backgroundColor: theme.palette.grey[50],
           minHeight: "100vh",
+          width: "100%",
         }}
       >
         <Toolbar />
