@@ -29,6 +29,7 @@ import {
   Alert,
   Tooltip,
   Stack,
+  Pagination,
   useTheme,
 } from "@mui/material";
 import {
@@ -73,6 +74,11 @@ const SensorListPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(100); // Using a large limit to get all sensors
+  const [totalPages, setTotalPages] = useState(1);
+
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -94,7 +100,7 @@ const SensorListPage = () => {
     }
   }, [selectedFarmId]);
 
-  // Load sensors when selectedDeviceId changes
+  // Load sensors when selectedDeviceId changes or pagination changes
   useEffect(() => {
     if (selectedDeviceId) {
       loadSensors();
@@ -102,7 +108,7 @@ const SensorListPage = () => {
       setSensors([]);
       setFilteredSensors([]);
     }
-  }, [selectedDeviceId]);
+  }, [selectedDeviceId, page, limit]);
 
   // Filter sensors when search query changes
   useEffect(() => {
@@ -152,7 +158,7 @@ const SensorListPage = () => {
     setError(null);
 
     try {
-      const response = await getDevices(selectedFarmId);
+      const response = await getDevices(selectedFarmId, { page: 1, limit: 100 });
       const devicesData = response.data || [];
       setDevices(devicesData);
 
@@ -180,9 +186,23 @@ const SensorListPage = () => {
     setError(null);
 
     try {
-      const response = await getSensors(selectedDeviceId);
-      setSensors(response.data || []);
-      setFilteredSensors(response.data || []);
+      const response = await getSensors(selectedDeviceId, { page, limit });
+      
+      // Handle response data based on your API structure
+      let sensorsData = [];
+      let totalPagesCount = 1;
+      
+      if (response.data) {
+        sensorsData = response.data;
+        totalPagesCount = response.totalPages || 1;
+      } else if (Array.isArray(response)) {
+        sensorsData = response;
+        totalPagesCount = Math.ceil(response.length / limit) || 1;
+      }
+      
+      setSensors(sensorsData);
+      setFilteredSensors(sensorsData);
+      setTotalPages(totalPagesCount);
       setIsLoading(false);
     } catch (err) {
       console.error("Error loading sensors:", err);
@@ -196,6 +216,7 @@ const SensorListPage = () => {
     const farmId = event.target.value;
     setSelectedFarmId(farmId);
     setSelectedDeviceId(""); // Reset device selection when farm changes
+    setPage(1); // Reset to page 1
 
     // Update URL to include the farmId
     const params = new URLSearchParams();
@@ -207,6 +228,7 @@ const SensorListPage = () => {
   const handleDeviceChange = (event) => {
     const deviceId = event.target.value;
     setSelectedDeviceId(deviceId);
+    setPage(1); // Reset to page 1
 
     // Update URL to include farmId and deviceId
     const params = new URLSearchParams();
@@ -276,6 +298,11 @@ const SensorListPage = () => {
     }
   };
 
+  // Handle page change
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
+
   // Format date string
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -298,6 +325,7 @@ const SensorListPage = () => {
     setEditDialogOpen(true);
   };
 
+  // Open the delete dialog
   // Open the delete dialog
   const handleDeleteClick = (sensor) => {
     setSelectedSensor(sensor);
@@ -682,6 +710,18 @@ const SensorListPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
+
+          {/* Pagination */}
+          {!isLoading && filteredSensors.length > 0 && totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+              />
+            </Box>
+          )}
         </Paper>
       )}
 

@@ -407,10 +407,14 @@ export const deleteDevice = async (deviceId) => {
   }
 };
 
-// Sensor API calls
-export const getSensors = async (deviceId) => {
+export const getSensors = async (deviceId, pagination = { page: 1, limit: 100 }) => {
   try {
-    const response = await api.get(`/sensors/by-device/${deviceId}`);
+    const response = await api.get(`/sensors/by-device/${deviceId}`, { 
+      params: {
+        page: pagination.page,
+        limit: pagination.limit
+      }
+    });
     return response.data;
   } catch (error) {
     console.error("Get sensors error:", error);

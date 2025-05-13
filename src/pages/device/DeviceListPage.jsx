@@ -29,6 +29,7 @@ import {
   Alert,
   Tooltip,
   Stack,
+  Pagination,
   useTheme,
 } from "@mui/material";
 import {
@@ -68,6 +69,11 @@ const DeviceListPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(100); // Using a large limit to get all devices
+  const [totalPages, setTotalPages] = useState(1);
+
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -87,7 +93,7 @@ const DeviceListPage = () => {
       setDevices([]);
       setFilteredDevices([]);
     }
-  }, [selectedFarmId]);
+  }, [selectedFarmId, page, limit]);
 
   // Filter devices when search query changes
   useEffect(() => {
@@ -143,9 +149,23 @@ const DeviceListPage = () => {
     setError(null);
 
     try {
-      const response = await getDevices(selectedFarmId);
-      setDevices(response.data || []);
-      setFilteredDevices(response.data || []);
+      const response = await getDevices(selectedFarmId, { page, limit });
+      
+      // Handle response data based on your API structure
+      let devicesData = [];
+      let totalPagesCount = 1;
+      
+      if (response.data) {
+        devicesData = response.data;
+        totalPagesCount = response.totalPages || 1;
+      } else if (Array.isArray(response)) {
+        devicesData = response;
+        totalPagesCount = Math.ceil(response.length / limit) || 1;
+      }
+      
+      setDevices(devicesData);
+      setFilteredDevices(devicesData);
+      setTotalPages(totalPagesCount);
       setIsLoading(false);
     } catch (err) {
       console.error("Error loading devices:", err);
@@ -158,6 +178,7 @@ const DeviceListPage = () => {
   const handleFarmChange = (event) => {
     const farmId = event.target.value;
     setSelectedFarmId(farmId);
+    setPage(1); // Reset to first page when farm changes
 
     // Update URL to include the farmId
     if (farmId) {
@@ -255,6 +276,11 @@ const DeviceListPage = () => {
   const handleDeleteClick = (device) => {
     setSelectedDevice(device);
     setDeleteDialogOpen(true);
+  };
+
+  // Handle page change
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
   };
 
   // Close snackbar alerts
@@ -571,6 +597,18 @@ const DeviceListPage = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination */}
+        {!isLoading && filteredDevices.length > 0 && totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
+        )}
       </Paper>
 
       {/* Create Device Dialog */}

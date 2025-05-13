@@ -1,11 +1,16 @@
 import api from "./api";
 
 // Get all devices
-export const getDevices = async (farmId) => {
+export const getDevices = async (farmId, pagination = { page: 1, limit: 100 }) => {
   try {
     // If farmId is provided, get devices by farm
     const url = farmId ? `/devices/by-farm/${farmId}` : "/devices";
-    const response = await api.get(url);
+    const response = await api.get(url, { 
+      params: { 
+        page: pagination.page, 
+        limit: pagination.limit 
+      } 
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching devices:", error);
