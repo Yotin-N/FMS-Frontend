@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// src/components/device/DeviceForm.jsx
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -7,12 +6,12 @@ import {
   FormControlLabel,
   Switch,
   Button,
-  Grid,
   MenuItem,
   CircularProgress,
   Typography,
   Divider,
   Alert,
+  useTheme,
 } from "@mui/material";
 import { getFarms } from "../../services/api"; // Make sure this import matches your API structure
 
@@ -23,6 +22,8 @@ const DeviceForm = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const theme = useTheme();
+
   // Initialize form data with only the fields needed for create/update
   const [formData, setFormData] = useState({
     name: "",
@@ -118,123 +119,226 @@ const DeviceForm = ({
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
+    <Box component="form" onSubmit={handleSubmit} noValidate>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom>
-            Device Information
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-        </Grid>
+      {/* Device Name */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          component="label"
+          htmlFor="device-name"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
+        >
+          Device Name
+        </Typography>
+        <TextField
+          required
+          fullWidth
+          id="device-name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          error={!!errors.name}
+          helperText={errors.name}
+          placeholder="Enter device name"
+          disabled={isLoading}
+          autoFocus
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name ? theme.palette.error.main : "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name
+                ? theme.palette.error.main
+                : theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
 
-        <Grid item xs={12}>
+      {/* Description */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          component="label"
+          htmlFor="device-description"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
+        >
+          Description
+        </Typography>
+        <TextField
+          fullWidth
+          id="device-description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          multiline
+          rows={3}
+          placeholder="Additional information about this device..."
+          disabled={isLoading}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
+
+      {/* Farm Selection (only for create) */}
+      {!isEdit && (
+        <Box sx={{ mb: 3 }}>
+          <Typography
+            component="label"
+            htmlFor="device-farm"
+            sx={{
+              color: theme.palette.primary.main,
+              display: "block",
+              mb: 1,
+              fontWeight: 500,
+            }}
+          >
+            Farm
+          </Typography>
           <TextField
+            select
             fullWidth
             required
-            label="Device Name"
-            name="name"
-            value={formData.name}
+            id="device-farm"
+            name="farmId"
+            value={formData.farmId}
             onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            disabled={isLoading}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Description"
-            name="description"
-            value={formData.description || ""}
-            onChange={handleChange}
-            multiline
-            rows={3}
-            disabled={isLoading}
-          />
-        </Grid>
-
-        {/* Only show farm selection for new devices */}
-        {!isEdit && (
-          <Grid item xs={12}>
-            <TextField
-              select
-              fullWidth
-              required
-              label="Farm"
-              name="farmId"
-              value={formData.farmId}
-              onChange={handleChange}
-              error={!!errors.farmId}
-              helperText={errors.farmId}
-              disabled={isLoading || isLoadingFarms}
-              InputProps={{
-                endAdornment: isLoadingFarms ? (
-                  <CircularProgress size={20} />
-                ) : null,
-              }}
-            >
-              <MenuItem value="" disabled>
-                Select a farm
-              </MenuItem>
-              {farms.map((farm) => (
-                <MenuItem key={farm.id} value={farm.id}>
-                  {farm.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-        )}
-
-        <Grid item xs={12}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.isActive}
-                onChange={handleChange}
-                name="isActive"
-                color="primary"
-                disabled={isLoading}
-              />
-            }
-            label="Device is active"
-          />
-        </Grid>
-
-        <Grid
-          item
-          xs={12}
-          sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
-        >
-          <Button
-            type="button"
+            error={!!errors.farmId}
+            helperText={errors.farmId}
+            disabled={isLoading || isLoadingFarms}
+            InputProps={{
+              endAdornment: isLoadingFarms ? (
+                <CircularProgress size={20} />
+              ) : null,
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.farmId ? theme.palette.error.main : "#e0e0e0",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.farmId
+                  ? theme.palette.error.main
+                  : theme.palette.primary.light,
+              },
+            }}
             variant="outlined"
-            onClick={onCancel}
-            sx={{ mr: 1 }}
-            disabled={isLoading}
           >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={isLoading}
-          >
-            {isLoading
-              ? "Saving..."
-              : isEdit
-              ? "Update Device"
-              : "Create Device"}
-          </Button>
-        </Grid>
-      </Grid>
+            <MenuItem value="" disabled>
+              Select a farm
+            </MenuItem>
+            {farms.map((farm) => (
+              <MenuItem key={farm.id} value={farm.id}>
+                {farm.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
+
+      {/* Active Switch */}
+      <Box sx={{ mb: 4 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={formData.isActive}
+              onChange={handleChange}
+              name="isActive"
+              color="primary"
+              disabled={isLoading}
+            />
+          }
+          label="Device is active"
+        />
+      </Box>
+
+      {/* Buttons */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Button
+          type="button"
+          onClick={onCancel}
+          disabled={isLoading}
+          sx={{
+            color: theme.palette.primary.main,
+            border: "none",
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
+            },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={isLoading}
+          sx={{
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            boxShadow: "none",
+            "&:hover": {
+              boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+            },
+          }}
+        >
+          {isLoading
+            ? "Saving..."
+            : isEdit
+            ? "Update Device"
+            : "Create Device"}
+        </Button>
+      </Box>
     </Box>
   );
 };

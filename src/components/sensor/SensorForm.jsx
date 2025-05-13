@@ -1,19 +1,17 @@
-// src/components/sensor/SensorForm.jsx
+// src/components/sensor/SensorForm.jsx - Updated to match FarmForm layout
 import { useState, useEffect } from "react";
 import {
   Box,
+  Button,
   TextField,
+  Typography,
   FormControlLabel,
   Switch,
-  Button,
-  Grid,
   MenuItem,
-  CircularProgress,
-  Typography,
-  Divider,
-  Alert,
   InputAdornment,
+  useTheme,
 } from "@mui/material";
+import { SaveOutlined as SaveIcon } from "@mui/icons-material";
 import { SensorType } from "../../constant/sensorTypes";
 
 const SensorForm = ({
@@ -23,6 +21,8 @@ const SensorForm = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const theme = useTheme();
+
   // Initialize form data with default values
   const [formData, setFormData] = useState({
     name: "",
@@ -35,7 +35,6 @@ const SensorForm = ({
   });
 
   const [errors, setErrors] = useState({});
-  const [error, setError] = useState(null);
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -133,7 +132,7 @@ const SensorForm = ({
 
       onSubmit(processedData);
     } catch (err) {
-      setError("Error submitting form: " + err.message);
+      console.error("Error submitting form:", err);
     }
   };
 
@@ -154,61 +153,145 @@ const SensorForm = ({
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+    <Box component="form" onSubmit={handleSubmit} noValidate>
+      {/* Sensor Name Field */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          component="label"
+          htmlFor="sensor-name"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
+        >
+          Sensor Name
+        </Typography>
+        <TextField
+          required
+          fullWidth
+          id="sensor-name"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          error={!!errors.name}
+          helperText={errors.name}
+          placeholder="Enter sensor name"
+          disabled={isLoading}
+          autoFocus
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name ? theme.palette.error.main : "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.name
+                ? theme.palette.error.main
+                : theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom>
-            Sensor Information
+      {/* Serial Number Field */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          component="label"
+          htmlFor="sensor-serialNumber"
+          sx={{
+            color: theme.palette.primary.main,
+            display: "block",
+            mb: 1,
+            fontWeight: 500,
+          }}
+        >
+          Serial Number
+        </Typography>
+        <TextField
+          required
+          fullWidth
+          id="sensor-serialNumber"
+          name="serialNumber"
+          value={formData.serialNumber}
+          onChange={handleChange}
+          error={!!errors.serialNumber}
+          helperText={errors.serialNumber}
+          placeholder="Enter serial number"
+          disabled={isLoading || (isEdit && initialData.serialNumber)}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1,
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 2,
+              },
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.serialNumber
+                ? theme.palette.error.main
+                : "#e0e0e0",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: errors.serialNumber
+                ? theme.palette.error.main
+                : theme.palette.primary.light,
+            },
+          }}
+          variant="outlined"
+        />
+      </Box>
+
+      {/* Type and Unit in a row */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            component="label"
+            htmlFor="sensor-type"
+            sx={{
+              color: theme.palette.primary.main,
+              display: "block",
+              mb: 1,
+              fontWeight: 500,
+            }}
+          >
+            Sensor Type
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            required
-            label="Sensor Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            disabled={isLoading}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            required
-            label="Serial Number"
-            name="serialNumber"
-            value={formData.serialNumber}
-            onChange={handleChange}
-            error={!!errors.serialNumber}
-            helperText={errors.serialNumber}
-            disabled={isLoading || (isEdit && initialData.serialNumber)}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
           <TextField
             select
             fullWidth
-            required
-            label="Sensor Type"
+            id="sensor-type"
             name="type"
             value={formData.type}
             onChange={handleChange}
             error={!!errors.type}
             helperText={errors.type}
             disabled={isLoading || (isEdit && initialData.type)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.type ? theme.palette.error.main : "#e0e0e0",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.type
+                  ? theme.palette.error.main
+                  : theme.palette.primary.light,
+              },
+            }}
+            variant="outlined"
           >
             {Object.entries(SensorType).map(([key, value]) => (
               <MenuItem key={key} value={key}>
@@ -216,46 +299,67 @@ const SensorForm = ({
               </MenuItem>
             ))}
           </TextField>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6}>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            component="label"
+            htmlFor="sensor-unit"
+            sx={{
+              color: theme.palette.primary.main,
+              display: "block",
+              mb: 1,
+              fontWeight: 500,
+            }}
+          >
+            Unit
+          </Typography>
           <TextField
             fullWidth
-            label="Unit"
+            id="sensor-unit"
             name="unit"
             value={formData.unit}
             onChange={handleChange}
             placeholder={getUnitPlaceholder(formData.type)}
             disabled={isLoading}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#e0e0e0",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: theme.palette.primary.light,
+              },
+            }}
+            variant="outlined"
           />
-        </Grid>
+        </Box>
+      </Box>
 
-        <Grid item xs={12} sm={6}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.isActive}
-                onChange={handleChange}
-                name="isActive"
-                color="primary"
-                disabled={isLoading}
-              />
-            }
-            label="Sensor is active"
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            Range Settings (Optional)
+      {/* Min/Max Values in a row */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            component="label"
+            htmlFor="sensor-minValue"
+            sx={{
+              color: theme.palette.primary.main,
+              display: "block",
+              mb: 1,
+              fontWeight: 500,
+            }}
+          >
+            Minimum Value
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
-            label="Minimum Value"
+            id="sensor-minValue"
             name="minValue"
             type="number"
             value={formData.minValue}
@@ -268,13 +372,45 @@ const SensorForm = ({
                 <InputAdornment position="end">{formData.unit}</InputAdornment>
               ) : null,
             }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.minValue
+                  ? theme.palette.error.main
+                  : "#e0e0e0",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.minValue
+                  ? theme.palette.error.main
+                  : theme.palette.primary.light,
+              },
+            }}
+            variant="outlined"
           />
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6}>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            component="label"
+            htmlFor="sensor-maxValue"
+            sx={{
+              color: theme.palette.primary.main,
+              display: "block",
+              mb: 1,
+              fontWeight: 500,
+            }}
+          >
+            Maximum Value
+          </Typography>
           <TextField
             fullWidth
-            label="Maximum Value"
+            id="sensor-maxValue"
             name="maxValue"
             type="number"
             value={formData.maxValue}
@@ -287,38 +423,101 @@ const SensorForm = ({
                 <InputAdornment position="end">{formData.unit}</InputAdornment>
               ) : null,
             }}
-          />
-        </Grid>
-
-        <Grid
-          item
-          xs={12}
-          sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
-        >
-          <Button
-            type="button"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 1,
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.maxValue
+                  ? theme.palette.error.main
+                  : "#e0e0e0",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: errors.maxValue
+                  ? theme.palette.error.main
+                  : theme.palette.primary.light,
+              },
+            }}
             variant="outlined"
-            onClick={onCancel}
-            sx={{ mr: 1 }}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={isLoading}
-            startIcon={isLoading ? <CircularProgress size={20} /> : null}
-          >
-            {isLoading
-              ? "Saving..."
-              : isEdit
-              ? "Update Sensor"
-              : "Create Sensor"}
-          </Button>
-        </Grid>
-      </Grid>
+          />
+        </Box>
+      </Box>
+
+      {/* Is Active Switch */}
+      <Box sx={{ mb: 4 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={formData.isActive}
+              onChange={handleChange}
+              name="isActive"
+              color="primary"
+              disabled={isLoading}
+            />
+          }
+          label={
+            <Typography
+              sx={{
+                color: theme.palette.primary.main,
+                fontWeight: 500,
+              }}
+            >
+              Sensor is active
+            </Typography>
+          }
+        />
+      </Box>
+
+      {/* Buttons */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <Button
+          type="button"
+          onClick={onCancel}
+          disabled={isLoading}
+          sx={{
+            color: theme.palette.primary.main,
+            border: "none",
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.04)",
+            },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          startIcon={<SaveIcon />}
+          disabled={isLoading}
+          sx={{
+            padding: "10px 24px",
+            borderRadius: 1,
+            textTransform: "none",
+            fontWeight: 500,
+            fontSize: "16px",
+            boxShadow: "none",
+            "&:hover": {
+              boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+            },
+          }}
+        >
+          {isLoading
+            ? "Saving..."
+            : isEdit
+            ? "Update Sensor"
+            : "Create Sensor"}
+        </Button>
+      </Box>
     </Box>
   );
 };

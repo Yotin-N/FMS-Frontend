@@ -74,7 +74,11 @@ const DashboardContent = () => {
     { id: 2, message: "Warning DO: low oxygen levels", type: "warning" },
     { id: 3, message: "Warning pH: value exceeds limit", type: "warning" },
   ]);
+  const [visibleSensors, setVisibleSensors] = useState([]);
   
+
+
+
   // Make sure we have fallback data if real data is empty
   useEffect(() => {
     if (selectedFarmId && chartData.length === 0 && !isLoading) {
@@ -91,6 +95,16 @@ const DashboardContent = () => {
   useEffect(() => {
     loadFarms();
   }, []);
+
+  useEffect(() => {
+    if (dashboardData && dashboardData.averages) {
+      const sensorTypes = Object.keys(dashboardData.averages);
+      setVisibleSensors(sensorTypes);
+    } else if (chartData.length > 0) {
+      const chartTypes = chartData.map(chart => chart.type);
+      setVisibleSensors(chartTypes);
+    }
+  }, [dashboardData, chartData]);
 
   useEffect(() => {
     if (selectedFarmId) {
@@ -125,6 +139,16 @@ const DashboardContent = () => {
       setError("Failed to load farms. Please try again.");
       setIsLoading(false);
     }
+  };
+
+  const handleToggleSensor = (sensorType) => {
+    setVisibleSensors((prev) => {
+      if (prev.includes(sensorType)) {
+        return prev.filter((type) => type !== sensorType);
+      } else {
+        return [...prev, sensorType];
+      }
+    });
   };
 
   const loadDashboardData = async () => {
@@ -240,10 +264,13 @@ const DashboardContent = () => {
             />
 
             {/* Exceeded Values Card */}
-            <ExceededValuesCard averages={dashboardData?.averages} />
+            {/* <ExceededValuesCard averages={dashboardData?.averages} /> */}
 
             {/* Active Sensors Card */}
-            <ActiveSensorsCard averages={dashboardData?.averages} />
+            <ActiveSensorsCard averages={dashboardData?.averages} 
+            visibleSensors={visibleSensors}
+            onToggleSensor={handleToggleSensor}
+            />
 
             {/* Notifications Card */}
             <NotificationsCard notifications={notifications} />
@@ -270,6 +297,7 @@ const DashboardContent = () => {
               chartData={chartData} 
               onRefresh={handleRefresh}
               isLoading={isLoading}
+              visibleSensors={visibleSensors}
             />
           </Grid>
         </Grid>

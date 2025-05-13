@@ -47,25 +47,25 @@ const AverageValueCardsGrid = ({ averages }) => {
               const unit = typeof data === 'object' && data !== null ? data.unit : '';
               
               return (
-                <Grid item xs={6} sm={4} md={3} key={type}>
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      bgcolor: getSensorTypeColor(type),
-                      color: "white",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {type}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              <Grid item xs={6} sm={4} md={3} key={type}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: getSensorTypeColor(type),
+                    color: "white",
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {type}
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
                       {typeof average === 'number' ? average.toFixed(1) : "N/A"}{" "}
                       {unit || ""}
-                    </Typography>
-                  </Box>
-                </Grid>
+                  </Typography>
+                </Box>
+              </Grid>
               );
             })
           ) : (

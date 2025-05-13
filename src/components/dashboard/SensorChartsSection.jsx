@@ -1,4 +1,3 @@
-// src/components/dashboard/SensorChartsSection.jsx
 import { useState, useEffect } from "react";
 import { 
   Box, 
@@ -7,11 +6,12 @@ import {
   CardContent, 
   IconButton, 
   Typography, 
-  useTheme 
+  useTheme ,
+  
 } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import {
   AreaChart,
   Area,
@@ -22,24 +22,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
+const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }) => {
   const theme = useTheme();
 
   // Helper to get color for each sensor type
   const getSensorTypeColor = (type) => {
     const colorMap = {
-      pH: "#4caf50",
-      DO: "#ff9800",
-      Temperature: "#f44336",
-      TempA: "#f44336",
-      TempB: "#f44336",
+      pH: "#ff9800", 
+      DO: "#ff9800", 
+      Temperature: "#f44336", 
+      TempA: "#f44336", 
+      TempB: "#ef5350", 
       TempC: "#f44336",
       SALT: "#2196f3",
-      Saltlinity: "#2196f3",
-      NHx: "#9c27b0",
+      Saltlinity: "#2196f3", 
+      NHx: "#9c27b0", 
       NH3: "#9c27b0",
-      EC: "#00bcd4",
-      TDS: "#8bc34a",
+      EC: "#00bcd4", 
+      TDS: "#8bc34a", 
       ORP: "#3f51b5",
       NO2: "#673ab7",
       NO: "#673ab7",
@@ -47,15 +47,66 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
     return colorMap[type] || theme.palette.grey[500];
   };
 
+  // Function to check if data spans multiple days
+  const doesDataSpanMultipleDays = (chartData) => {
+    if (!Array.isArray(chartData) || chartData.length === 0) return false;
+    
+    // Collect all dates from all sensors
+    const allDates = [];
+    
+    chartData.forEach(sensor => {
+      if (Array.isArray(sensor.data)) {
+        sensor.data.forEach(point => {
+          if (point.time) {
+            // Extract just the date part (without time)
+            const date = new Date(point.time);
+            if (isValid(date)) {
+              allDates.push(format(date, "yyyy-MM-dd"));
+            }
+          }
+        });
+      }
+    });
+    
+    // If we have unique dates more than 1, data spans multiple days
+    const uniqueDates = [...new Set(allDates)];
+    return uniqueDates.length > 1;
+  };
+
   // Format chart date labels
   const formatChartDate = (time) => {
     if (!time) return "";
-    const date = new Date(time);
-    return format(date, "HH:mm");
+    try {
+      const date = new Date(time);
+      return format(date, "MMM d");
+    } catch (error) {
+      console.warn("Invalid date format:", time);
+      return "";
+    }
+  };
+
+  // Format tooltip date
+  const formatTooltipDate = (time) => {
+    if (!time) return "";
+    try {
+      const date = new Date(time);
+      return format(date, "MMM d, yyyy HH:mm");
+    } catch (error) {
+      console.warn("Invalid date format:", time);
+      return "";
+    }
   };
 
   // Process and validate chart data
   const validChartData = Array.isArray(chartData) ? chartData : [];
+  
+  // Filter chart data based on visible sensors
+  const filteredChartData = visibleSensors && visibleSensors.length > 0 
+    ? validChartData.filter(sensorData => visibleSensors.includes(sensorData.type))
+    : validChartData;
+
+  // If no charts are selected, show a message
+  const showNoChartsMessage = filteredChartData.length === 0 && validChartData.length > 0;
 
   return (
     <Box
@@ -63,16 +114,43 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
         flexGrow: 1,
         minHeight: 0,
         width: "100%",
-        // Expand to full width
         maxWidth: "100%",
-        ml: { xs: -2, sm: -2, md: -2 },
-        mr: { xs: -2, sm: -2, md: -2 },
-        px: { xs: 2, sm: 2, md: 2 },
-        boxSizing: "border-box",
+        px: { xs: 0, sm: 0, md: 0 }
       }}
     >
-      {validChartData.length > 0 ? (
-        validChartData.map((sensorTypeData) => (
+      {showNoChartsMessage ? (
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            width: "100%",
+          }}
+        >
+          <CardContent sx={{ p: 2, width: "100%" }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: 200,
+                bgcolor: "action.hover",
+                borderRadius: 1,
+                width: "100%",
+              }}
+            >
+              <Typography color="text.secondary" gutterBottom>
+                No sensor charts selected
+              </Typography>
+              <Typography color="text.secondary" variant="body2">
+                Toggle sensors in the Active Sensors panel to display their charts
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      ) : filteredChartData.length > 0 ? (
+        filteredChartData.map((sensorTypeData) => (
           <Card
             key={sensorTypeData.type}
             sx={{
@@ -92,7 +170,7 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
                   mb: 2,
                 }}
               >
-                <Typography variant="h6">
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
                   {sensorTypeData.type ? sensorTypeData.type.toUpperCase() : "UNKNOWN"} Chart
                 </Typography>
                 <IconButton size="small">
@@ -102,7 +180,10 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
               {sensorTypeData.data && Array.isArray(sensorTypeData.data) && sensorTypeData.data.length > 0 ? (
                 <Box sx={{ width: "100%", height: 200 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={sensorTypeData.data}>
+                    <AreaChart 
+                      data={sensorTypeData.data}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 40 }}
+                    >
                       <defs>
                         <linearGradient
                           id={`gradient-${sensorTypeData.type}`}
@@ -138,22 +219,39 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading }) => {
                         stroke="#888"
                         axisLine={false}
                         tickLine={false}
+                        tick={{ 
+                          fontSize: 12,
+                          fill: '#666',
+                          fontFamily: 'inherit'
+                        }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={50}
+                        interval="preserveStartEnd"
+                        minTickGap={30}
                       />
                       <YAxis
                         stroke="#888"
                         axisLine={false}
                         tickLine={false}
+                        tick={{ 
+                          fontSize: 12,
+                          fill: '#666',
+                          fontFamily: 'inherit'
+                        }}
                       />
                       <Tooltip
                         formatter={(value) => [
                           typeof value === 'number' ? value.toFixed(2) : 'N/A',
                           sensorTypeData.type,
                         ]}
-                        labelFormatter={formatChartDate}
+                        labelFormatter={formatTooltipDate}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.9)",
                           border: "1px solid #ddd",
                           borderRadius: 4,
+                          fontSize: 12,
+                          fontFamily: 'inherit'
                         }}
                       />
                       <Area
