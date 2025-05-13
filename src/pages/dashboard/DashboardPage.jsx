@@ -464,28 +464,16 @@ const DashboardPage = () => {
       >
         <Toolbar />
         <Routes>
-          <Route path="/" element={<DashboardContent />} />
-          <Route path="/farms/*" element={<FarmListPage />} />
-          <Route path="/devices/*" element={<DeviceListPage />} />
-          <Route path="/sensors" element={<SensorListPage />} />
-          <Route
-            path="/sensors/:id/readings"
-            element={<SensorReadingsPage />}
-          />
-          <Route
-            path="/users/*"
-            element={
-              user && user.role === "ADMIN" ? (
-                <UserListPage />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
-          <Route path="/users/create" element={<CreateUserPage />} />
-          <Route path="/users/edit/:id" element={<EditUserPage />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+  <Route path="" element={<DashboardContent />} /> {/* For /dashboard */}
+  <Route path="farms/*" element={<FarmListPage />} /> {/* For /dashboard/farms */}
+  <Route path="devices/*" element={<DeviceListPage />} /> {/* For /dashboard/devices */}
+  <Route path="sensors" element={<SensorListPage />} />
+  <Route path="sensors/:id/readings" element={<SensorReadingsPage />} />
+  <Route path="users/*" element={<UserListPage />} />
+  <Route path="users/create" element={<CreateUserPage />} />
+  <Route path="users/edit/:id" element={<EditUserPage />} />
+  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+</Routes>
       </Box>
     </Box>
   );
