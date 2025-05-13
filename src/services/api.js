@@ -1,6 +1,8 @@
+
 import axios from "axios";
 
-// Create an axios instance with defaults
+
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -11,13 +13,110 @@ const api = axios.create({
   },
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+}
+
+function decodeJwt(token) {
+  try {
+    // JWT tokens consist of three parts: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid JWT format');
+    }
+    
+    // The payload is the second part, base64 encoded
+    const base64Payload = parts[1];
+    // Replace characters for base64url to standard base64
+    const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+    // Decode the base64 string to get the JSON payload
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join('')
+    );
+    
+    // Parse the JSON payload to an object
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Failed to decode JWT token:', error);
+    return {};
+  }
+}
+
+const refreshToken = async () => {
+  try {
+    const userData = localStorage.getItem("farmUser");
+    
+    // If we don't have user data, we can't refresh
+    if (!userData || !userData.token) {
+      throw new Error("No user data found");
+    }
+    
+    // Call the token refresh endpoint
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+      token: userData.token // Send the current token, even if expired
+    });
+    
+    // Update the stored token with the new one
+    const newUserData = {
+      ...JSON.parse(userData),
+      token: response.data.accessToken,
+      // Optionally update user information if it's returned
+      ...(response.data.user && { user: response.data.user })
+    };
+    
+    localStorage.setItem("farmUser", JSON.stringify(newUserData));
+    
+    return response.data.accessToken;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    // Clear user data if refresh fails
+    localStorage.removeItem("farmUser");
+    // Only redirect to login if we get a 401 from the refresh attempt
+    if (error.response && error.response.status === 401) {
+      window.location.href = "/login";
+      localStorage.setItem("authError", "Your session has expired. Please log in again.");
+    }
+    throw error;
+  }
+};
+
+// Add a request interceptor
 api.interceptors.request.use(
   (config) => {
     const userData = localStorage.getItem("farmUser");
     if (userData) {
       try {
-        const { token } = JSON.parse(userData);
+        const parsedData = JSON.parse(userData);
+        const { token } = parsedData;
+        
         if (token) {
+          // Check if token is already expired
+          const decoded = decodeJwt(token);
+          const currentTime = Date.now() / 1000;
+          
+          // For logging purposes
+          if (decoded.exp) {
+            const timeRemaining = decoded.exp - currentTime;
+            console.log(`Token expires in ${timeRemaining.toFixed(2)} seconds`);
+          }
+
+          // Add token to request header regardless of expiration
+          // The response interceptor will handle expired tokens
           config.headers.Authorization = `Bearer ${token}`;
         }
       } catch (error) {
@@ -27,6 +126,58 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add a response interceptor to handle token expiration
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is unauthorized (401) and we haven't retried yet
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If a refresh is already in progress, add this request to the queue
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return api(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt to refresh the token
+        const newToken = await refreshToken();
+        
+        // Update the authorization header for the failed request
+        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+        
+        // Process any queued requests with the new token
+        processQueue(null, newToken);
+        
+        // Retry the original request with the new token
+        return api(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, process queue with error
+        processQueue(refreshError, null);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -42,15 +193,19 @@ export const loginUser = async (credentials) => {
   }
 };
 
+export const refreshAuthToken = async () => {
+  refreshToken
+}
+
 export const registerUser = async (userData) => {
   try {
-    // Transform the user data to match the backend expectations
+    
     const registerData = {
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
       password: userData.password,
-      // Omit confirmPassword as it's not needed on the backend
+     
     };
 
     // Send registration request directly to the users/register endpoint
