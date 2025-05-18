@@ -1,4 +1,3 @@
-// src/pages/dashboard/DashboardPage.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,6 +18,7 @@ import {
   useMediaQuery,
   ListItemButton,
   Avatar,
+  Container,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AgricultureIcon from "@mui/icons-material/Agriculture";
@@ -75,9 +75,6 @@ const DashboardContent = () => {
     { id: 3, message: "Warning pH: value exceeds limit", type: "warning" },
   ]);
   const [visibleSensors, setVisibleSensors] = useState([]);
-  
-
-
 
   // Make sure we have fallback data if real data is empty
   useEffect(() => {
@@ -96,12 +93,23 @@ const DashboardContent = () => {
     loadFarms();
   }, []);
 
+  // Debug logging for visibleSensors
   useEffect(() => {
+    console.log("DashboardContent - visibleSensors:", visibleSensors);
+  }, [visibleSensors]);
+
+  useEffect(() => {
+    console.log("DashboardContent - dashboardData:", dashboardData);
+    
     if (dashboardData && dashboardData.averages) {
+      // Initialize visibleSensors with all available sensor types
       const sensorTypes = Object.keys(dashboardData.averages);
+      console.log("DashboardContent - Setting visibleSensors from dashboardData:", sensorTypes);
       setVisibleSensors(sensorTypes);
-    } else if (chartData.length > 0) {
+    } else if (chartData && chartData.length > 0) {
+      // Fallback to chart data if dashboard data is not available
       const chartTypes = chartData.map(chart => chart.type);
+      console.log("DashboardContent - Setting visibleSensors from chartData:", chartTypes);
       setVisibleSensors(chartTypes);
     }
   }, [dashboardData, chartData]);
@@ -142,6 +150,7 @@ const DashboardContent = () => {
   };
 
   const handleToggleSensor = (sensorType) => {
+    // For charts - keep the toggle functionality
     setVisibleSensors((prev) => {
       if (prev.includes(sensorType)) {
         return prev.filter((type) => type !== sensorType);
@@ -199,7 +208,7 @@ const DashboardContent = () => {
   };
 
   return (
-    <Box sx={{ width: "100%", px: { xs: 0, sm: 0 } }}>
+    <Box sx={{ width: "100%" }}>
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -242,65 +251,51 @@ const DashboardContent = () => {
       )}
 
       {selectedFarmId && (
-        <Grid
-          container
-          spacing={3}
-          sx={{ 
-            width: "100%", 
-            m: 0,
-            minHeight: "calc(100vh - 100px)",
-            // Remove margins that would prevent full-width expansion
-            mx: 0,
-            px: { xs: 0, sm: 0, md: 0 }
-          }}
-        >
-          {/* Left Column - 30% */}
-          <Grid item xs={12} md={4}>
-            {/* Date Time Card */}
-            <LatestTimestampCard 
-              timestamp={dashboardData?.latestTimestamp}
-              onRefresh={handleRefresh}
-              isLoading={isLoading}
-            />
+        <Box sx={{ width: "100%" }}>
+          {/* Left column with side cards */}
+          <Box sx={{ display: "flex", width: "100%", flexDirection: { xs: "column", md: "row" }, gap: 3 }}>
+            {/* Left sidebar with cards */}
+            <Box 
+              sx={{ 
+                width: { xs: "100%", md: "25%" }, 
+                minWidth: { md: "250px" },
+                maxWidth: { md: "350px" },
+                order: { xs: 2, md: 1 }
+              }}
+            >
+              {/* Date Time Card */}
+              <LatestTimestampCard 
+                timestamp={dashboardData?.latestTimestamp}
+                onRefresh={handleRefresh}
+                isLoading={isLoading}
+              />
 
-            {/* Exceeded Values Card */}
-            {/* <ExceededValuesCard averages={dashboardData?.averages} /> */}
+              {/* Active Sensors Card */}
+              <ActiveSensorsCard 
+                averages={dashboardData?.averages} 
+                visibleSensors={visibleSensors}
+                onToggleSensor={handleToggleSensor}
+              />
 
-            {/* Active Sensors Card */}
-            <ActiveSensorsCard averages={dashboardData?.averages} 
-            visibleSensors={visibleSensors}
-            onToggleSensor={handleToggleSensor}
-            />
+              {/* Notifications Card */}
+              <NotificationsCard notifications={notifications} />
+            </Box>
 
-            {/* Notifications Card */}
-            <NotificationsCard notifications={notifications} />
-          </Grid>
-
-          {/* Right Column - 70% */}
-          <Grid
-            item
-            xs={12}
-            md={8}
-            sx={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              height: "100%",
-              // Enable full width charts by removing padding on this container
-              px: { xs: 0, sm: 0, md: 0 } 
-            }}
-          >
-            {/* Sensor Values Cards */}
-            <AverageValueCardsGrid averages={dashboardData?.averages} />
-
-            {/* Charts Section */}
-            <SensorChartsSection 
-              chartData={chartData} 
-              onRefresh={handleRefresh}
-              isLoading={isLoading}
-              visibleSensors={visibleSensors}
-            />
-          </Grid>
-        </Grid>
+            {/* Container for sensor values and charts (moved to right) */}
+            <Box sx={{ flex: 1, width: { xs: "100%", md: "75%" }, order: { xs: 1, md: 2 } }}>
+              {/* Sensor Values Cards */}
+              <AverageValueCardsGrid averages={dashboardData?.averages} />
+              
+              {/* Charts Section */}
+              <SensorChartsSection 
+                chartData={chartData} 
+                onRefresh={handleRefresh}
+                isLoading={isLoading}
+                visibleSensors={visibleSensors}
+              />
+            </Box>
+          </Box>
+        </Box>
       )}
     </Box>
   );
@@ -453,27 +448,28 @@ const DashboardPage = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 0, sm: 1, md: 2 },
-          pt: 0,
+          p: { xs: 2, sm: 3 },
           backgroundColor: theme.palette.grey[50],
           minHeight: "100vh",
           width: "100%",
-          maxWidth: "100%", // Ensure content can expand fully
-          overflowX: "hidden" // Prevent horizontal scrolling
+          maxWidth: "100%",
+          overflowX: "hidden"
         }}
       >
         <Toolbar />
-        <Routes>
-  <Route path="" element={<DashboardContent />} /> {/* For /dashboard */}
-  <Route path="farms/*" element={<FarmListPage />} /> {/* For /dashboard/farms */}
-  <Route path="devices/*" element={<DeviceListPage />} /> {/* For /dashboard/devices */}
-  <Route path="sensors" element={<SensorListPage />} />
-  <Route path="sensors/:id/readings" element={<SensorReadingsPage />} />
-  <Route path="users/*" element={<UserListPage />} />
-  <Route path="users/create" element={<CreateUserPage />} />
-  <Route path="users/edit/:id" element={<EditUserPage />} />
-  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-</Routes>
+        <Container maxWidth="xl" disableGutters>
+          <Routes>
+            <Route path="" element={<DashboardContent />} />
+            <Route path="farms/*" element={<FarmListPage />} />
+            <Route path="devices/*" element={<DeviceListPage />} />
+            <Route path="sensors" element={<SensorListPage />} />
+            <Route path="sensors/:id/readings" element={<SensorReadingsPage />} />
+            <Route path="users/*" element={<UserListPage />} />
+            <Route path="users/create" element={<CreateUserPage />} />
+            <Route path="users/edit/:id" element={<EditUserPage />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Container>
       </Box>
     </Box>
   );

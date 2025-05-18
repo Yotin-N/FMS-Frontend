@@ -6,8 +6,7 @@ import {
   CardContent, 
   IconButton, 
   Typography, 
-  useTheme ,
-  
+  useTheme 
 } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -109,15 +108,7 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
   const showNoChartsMessage = filteredChartData.length === 0 && validChartData.length > 0;
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        minHeight: 0,
-        width: "100%",
-        maxWidth: "100%",
-        px: { xs: 0, sm: 0, md: 0 }
-      }}
-    >
+    <Box sx={{ width: "100%" }}>
       {showNoChartsMessage ? (
         <Card
           sx={{

@@ -1,16 +1,11 @@
 import { 
-  Avatar, 
   Box, 
   Card, 
   CardContent, 
-  List, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
   Typography, 
   useTheme,
   Switch,
-  ListItemSecondaryAction 
+  Divider
 } from "@mui/material";
 import ThermostatIcon from "@mui/icons-material/Thermostat";
 import OpacityIcon from "@mui/icons-material/Opacity"; 
@@ -22,7 +17,6 @@ import GrainIcon from "@mui/icons-material/Grain";
 const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
   const theme = useTheme();
 
-  
   const getSensorTypeColor = (type) => {
     const colorMap = {
       pH: "#ff9800", 
@@ -44,26 +38,24 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
     return colorMap[type] || theme.palette.grey[500];
   };
 
-  
   const getSensorIcon = (type) => {
     const iconMap = {
-      pH: <OpacityIcon sx={{ fontSize: 16 }} />,
-      DO: <OpacityIcon sx={{ fontSize: 16 }} />,
-      Temperature: <ThermostatIcon sx={{ fontSize: 16 }} />,
-      TempA: <ThermostatIcon sx={{ fontSize: 16 }} />,
-      TempB: <ThermostatIcon sx={{ fontSize: 16 }} />,
-      TempC: <ThermostatIcon sx={{ fontSize: 16 }} />,
-      SALT: <WavesIcon sx={{ fontSize: 16 }} />,
-      Saltlinity: <WavesIcon sx={{ fontSize: 16 }} />,
-      NHx: <ScienceIcon sx={{ fontSize: 16 }} />,
-      NH3: <ScienceIcon sx={{ fontSize: 16 }} />,
-      EC: <BoltIcon sx={{ fontSize: 16 }} />,
-      TDS: <GrainIcon sx={{ fontSize: 16 }} />,
+      pH: <OpacityIcon />,
+      DO: <OpacityIcon />,
+      Temperature: <ThermostatIcon />,
+      TempA: <ThermostatIcon />,
+      TempB: <ThermostatIcon />,
+      TempC: <ThermostatIcon />,
+      SALT: <WavesIcon />,
+      Saltlinity: <WavesIcon />,
+      NHx: <ScienceIcon />,
+      NH3: <ScienceIcon />,
+      EC: <BoltIcon />,
+      TDS: <GrainIcon />,
     };
-    return iconMap[type] || <ThermostatIcon sx={{ fontSize: 16 }} />;
+    return iconMap[type] || <ThermostatIcon />;
   };
 
-  
   const hasAverages = averages && typeof averages === 'object' && Object.keys(averages).length > 0;
 
   return (
@@ -71,72 +63,140 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
       sx={{
         mb: 3,
         borderRadius: 2,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        height: "auto",
+        maxHeight: 400
       }}
     >
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
-          Active Sensors
-        </Typography>
-        <List sx={{ p: 0 }}>
+      <CardContent sx={{ p: 0 }}>
+        {/* Header */}
+        <Box sx={{ p: 2, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+            Active Sensors
+          </Typography>
+        </Box>
+        <Divider />
+
+        {/* Scrollable content */}
+        <Box 
+          sx={{ 
+            overflowY: "auto", 
+            maxHeight: "300px",
+            // Firefox scrollbar
+            scrollbarWidth: 'thin',
+            scrollbarColor: `${theme.palette.grey[400]} ${theme.palette.grey[100]}`,
+            // WebKit scrollbar
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: theme.palette.grey[100],
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: theme.palette.grey[400],
+              borderRadius: '6px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: theme.palette.grey[500],
+            },
+          }}
+        >
           {hasAverages ? (
             Object.entries(averages).map(([type, data]) => {
-              
               const average = typeof data === 'object' && data !== null ? data.average : null;
               const unit = typeof data === 'object' && data !== null ? data.unit : '';
-              
-              // Display N/A if the average is not available
               const displayValue = average !== null && average !== undefined ? 
                 Number(average).toFixed(1) : 'N/A';
+              const sensorColor = getSensorTypeColor(type);
               
               return (
-                <ListItem key={type} sx={{ px: 0, py: 1 }}>
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    <Avatar
+                <Box 
+                  key={type} 
+                  sx={{ 
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderBottom: `1px solid ${theme.palette.grey[100]}`,
+                    transition: 'background-color 0.2s',
+                    '&:hover': {
+                      backgroundColor: theme.palette.grey[50]
+                    }
+                  }}
+                >
+                  {/* Left - Icon and sensor info */}
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box
                       sx={{
-                        bgcolor: getSensorTypeColor(type),
-                        width: 32,
-                        height: 32,
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: sensorColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        mr: 2,
+                        '& svg': {
+                          fontSize: 20
+                        }
                       }}
                     >
                       {getSensorIcon(type)}
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={type}
-                    secondary={`${displayValue} ${unit || ''}`}
-                    primaryTypographyProps={{ fontWeight: 500 }}
+                    </Box>
+                    <Box>
+                      <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                          fontWeight: 600, 
+                          color: theme.palette.text.primary,
+                          lineHeight: 1.2
+                        }}
+                      >
+                        {type}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: displayValue === 'N/A' ? 
+                            theme.palette.text.disabled : 
+                            theme.palette.text.secondary,
+                          fontWeight: 500
+                        }}
+                      >
+                        {displayValue} {unit}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Right - Switch */}
+                  <Switch
+                    checked={visibleSensors.includes(type)}
+                    onChange={() => onToggleSensor(type)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: sensorColor,
+                        '&:hover': {
+                          backgroundColor: `${sensorColor}1A`,
+                        },
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: sensorColor,
+                        opacity: 0.5
+                      },
+                    }}
                   />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      size="small"
-                      checked={visibleSensors.includes(type)}
-                      onChange={() => onToggleSensor(type)}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: getSensorTypeColor(type),
-                          '&:hover': {
-                            backgroundColor: `${getSensorTypeColor(type)}1A`,
-                          },
-                        },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: getSensorTypeColor(type),
-                        },
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
+                </Box>
               );
             })
           ) : (
-            <Box sx={{ p: 2, textAlign: "center" }}>
+            <Box sx={{ p: 3, textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 No active sensors
               </Typography>
             </Box>
           )}
-        </List>
+        </Box>
       </CardContent>
     </Card>
   );

@@ -13,7 +13,7 @@ import useAuth from "./hooks/useAuth";
 import Navbar from "./components/layout/Navbar";
 import theme from "./styles/theme";
 
-// Lazy loaded pages for better performance
+
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 const DashboardPage = lazy(() => import("./pages/dashboard/DashboardPage"));
@@ -51,7 +51,7 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-// Scroll to top on route change
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
