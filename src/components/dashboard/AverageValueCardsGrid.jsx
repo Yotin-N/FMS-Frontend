@@ -1,4 +1,5 @@
 import { Box, Grid, Typography, useTheme } from "@mui/material";
+// import { type } from "os";
 
 const AverageValueCardsGrid = ({ averages, visibleSensors }) => {
   const theme = useTheme();
@@ -226,7 +227,9 @@ const AverageValueCardsGrid = ({ averages, visibleSensors }) => {
 
   // Ensure we render all available sensors regardless of visibleSensors state
   // This is a key fix - we're no longer filtering based on visibleSensors
-  const sensors = averages ? Object.entries(averages) : [];
+  const sensors = averages ? 
+    Object.entries(averages).filter(([type]) => visibleSensors.includes(type)) :
+    [];
 
   return (
     <Box sx={{ width: "100%", mb: 4 }}>

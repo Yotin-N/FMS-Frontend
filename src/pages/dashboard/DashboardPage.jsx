@@ -284,7 +284,7 @@ const DashboardContent = () => {
             {/* Container for sensor values and charts (moved to right) */}
             <Box sx={{ flex: 1, width: { xs: "100%", md: "75%" }, order: { xs: 1, md: 2 } }}>
               {/* Sensor Values Cards */}
-              <AverageValueCardsGrid averages={dashboardData?.averages} />
+              <AverageValueCardsGrid averages={dashboardData?.averages} visibleSensors= {visibleSensors} />
               
               {/* Charts Section */}
               <SensorChartsSection 
