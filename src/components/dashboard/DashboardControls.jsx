@@ -1,6 +1,15 @@
-
-import { Box, Typography, Button } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  Chip,
+  useTheme 
+} from "@mui/material";
 
 const DashboardControls = ({ 
   farms, 
@@ -9,7 +18,7 @@ const DashboardControls = ({
   onFarmChange, 
   onTimeRangeChange 
 }) => {
-  const navigate = useNavigate();
+  const theme = useTheme();
 
   // Time range buttons configuration
   const timeRangeButtons = [
@@ -24,53 +33,60 @@ const DashboardControls = ({
         mb: 3,
         display: "flex",
         justifyContent: "space-between",
-        flexWrap: "wrap",
+        flexDirection: { xs: "column", sm: "row" },
+        alignItems: { xs: "stretch", sm: "center" },
         gap: 2,
       }}
     >
-      {/* Farm Selection */}
-      <Box sx={{ minWidth: 200 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          Farm
-        </Typography>
-        <select
+      {/* Farm Selection - Modernized */}
+      <FormControl 
+        sx={{ 
+          minWidth: 200, 
+          maxWidth: { xs: "100%", sm: 300 },
+        }}
+      >
+        <InputLabel id="farm-select-label">Select Farm</InputLabel>
+        <Select
+          labelId="farm-select-label"
           value={selectedFarmId}
           onChange={onFarmChange}
-          style={{
-            width: "100%",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ddd",
-            backgroundColor: "white",
+          label="Select Farm"
+          displayEmpty
+          renderValue={(selected) => {
+            if (!selected) return null;
+            const farm = farms.find(f => f.id === selected);
+            return farm ? farm.name : "";
           }}
+          sx={{ borderRadius: 1 , height: "40px"}}
         >
           {farms.map((farm) => (
-            <option key={farm.id} value={farm.id}>
+            <MenuItem key={farm.id} value={farm.id}>
               {farm.name}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-      </Box>
+        </Select>
+      </FormControl>
 
-      {/* Time Range Selection */}
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
-          Time Range
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          {timeRangeButtons.map((button) => (
-            <Button
-              key={button.value}
-              variant={timeRange === button.value ? "contained" : "outlined"}
-              size="small"
-              onClick={() => onTimeRangeChange(button.value)}
-              sx={{ minWidth: "60px" }}
-            >
-              {button.label}
-            </Button>
-          ))}
-        </Box>
-      </Box>
+      {/* Time Range Selection - Modernized */}
+      <Stack direction="row" spacing={1} alignItems="center">
+    
+        {timeRangeButtons.map((button) => (
+          <Button
+            key={button.value}
+            variant={timeRange === button.value ? "contained" : "outlined"}
+            size="small"
+            onClick={() => onTimeRangeChange(button.value)}
+            sx={{
+              minWidth: "60px",
+              borderRadius: 1,
+              textTransform: "none",
+              boxShadow: "none",
+            }}
+          >
+            {button.label}
+          </Button>
+        ))}
+      </Stack>
     </Box>
   );
 };

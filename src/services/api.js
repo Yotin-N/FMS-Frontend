@@ -46,16 +46,45 @@ function decodeJwt(token) {
 }
 
 
-
+api.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage
+    const userData = localStorage.getItem("farmUser");
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        if (user && user.token) {
+          // Add token to headers
+          config.headers['Authorization'] = `Bearer ${user.token}`;
+        }
+      } catch (error) {
+        console.error("Error parsing user data from localStorage", error);
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle 401 Unauthorized errors
     if (error.response && error.response.status === 401) {
+      // Clear user data from localStorage
+      localStorage.removeItem("farmUser");
+      
+      // Set error message to show on login page
       localStorage.setItem("authError", "Your session has expired. Please log in again.");
-      window.location.href = '/login';
+      
+      // Redirect to login page - but only if we're not already on the login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -64,11 +93,17 @@ api.interceptors.response.use(
 // Auth API calls
 export const loginUser = async (credentials) => {
   try {
-    // The cookie will be set automatically by the browser
     const response = await api.post("/auth/login", credentials);
     
-    // Store user info only (not token)
-    localStorage.setItem("farmUser", JSON.stringify(response.data.user));
+    // Store both user info and token
+    const userData = {
+      id: response.data.user.id,
+      email: response.data.user.email,
+      role: response.data.user.role,
+      token: response.data.accessToken  // Make sure we store the token
+    };
+    
+    localStorage.setItem("farmUser", JSON.stringify(userData));
     
     return response.data;
   } catch (error) {
@@ -76,10 +111,6 @@ export const loginUser = async (credentials) => {
     throw error;
   }
 };
-
-export const refreshAuthToken = async () => {
-  refreshToken
-}
 
 export const registerUser = async (userData) => {
   try {
@@ -468,16 +499,21 @@ export const searchUsersByEmail = async (email, farmId) => {
   }
 };
 
-export const logoutUser = async () => {
-  try {
-    // Call a logout endpoint that clears the cookie
-    await api.post("/auth/logout");
-    localStorage.removeItem("farmUser");
-  } catch (error) {
-    console.error("Logout error:", error);
-    // Still remove user data even if logout fails
-    localStorage.removeItem("farmUser");
-  }
+const logout = () => {
+  // Clear user state
+  setUser(null);
+  setIsAuthenticated(false);
+  
+  // Clear all auth data
+  localStorage.removeItem("farmUser");
+  localStorage.removeItem("googleLoginPending");
+  localStorage.removeItem("authError");
+  
+  // Also clear auth cookie if your app uses one
+  document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  
+  // Navigate to login
+  navigate("/login");
 };
 
 export default api;

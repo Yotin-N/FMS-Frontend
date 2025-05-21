@@ -99,12 +99,13 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
   // Process and validate chart data
   const validChartData = Array.isArray(chartData) ? chartData : [];
   
-  // Filter chart data based on visible sensors
-  const filteredChartData = visibleSensors && visibleSensors.length > 0 
-    ? validChartData.filter(sensorData => visibleSensors.includes(sensorData.type))
-    : validChartData;
+  // FIXED: Explicitly filter the chart data based on visibleSensors array
+  // Only include a sensor if it exists in visibleSensors array
+  const filteredChartData = validChartData.filter(sensorData => 
+    visibleSensors && visibleSensors.includes(sensorData.type)
+  );
 
-  // If no charts are selected, show a message
+  // If no charts are selected but there is chart data available, show a message
   const showNoChartsMessage = filteredChartData.length === 0 && validChartData.length > 0;
 
   return (

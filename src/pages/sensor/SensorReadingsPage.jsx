@@ -31,8 +31,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
-  DateRange as DateRangeIcon,
-  BubbleChart as BubbleChartIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import {
   getSensor,
@@ -92,6 +91,10 @@ const SensorReadingsPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onRefresh = () => {
+    loadReadings(); 
   };
 
   // Load sensor readings
@@ -199,7 +202,15 @@ const SensorReadingsPage = () => {
     <Box>
       {/* Page Header */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-        <IconButton color="primary" onClick={handleBack} sx={{ mr: 1 }}>
+        <IconButton 
+          color="primary" 
+          onClick={handleBack} 
+          sx={{ 
+            mr: 1,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 1
+          }}
+        >
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
@@ -210,11 +221,9 @@ const SensorReadingsPage = () => {
             : "Sensor Readings"}
         </Typography>
       </Box>
-
-      {/* Loading State */}
-      {isLoading && <LinearProgress sx={{ mb: 3 }} />}
-
-      {/* Error and Success Alerts */}
+  
+      {/* Loading Indicator and Alerts here */}
+      {/* Error Display */}
       <Snackbar
         open={!!error}
         autoHideDuration={6000}
@@ -228,7 +237,8 @@ const SensorReadingsPage = () => {
           {error}
         </Alert>
       </Snackbar>
-
+  
+      {/* Success Display */}
       <Snackbar
         open={!!success}
         autoHideDuration={6000}
@@ -242,46 +252,48 @@ const SensorReadingsPage = () => {
           {success}
         </Alert>
       </Snackbar>
-
+  
       {sensor && (
         <>
           {/* Sensor Details Card */}
-          <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+          <Paper sx={{ p: 3, mb: 4, borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main, fontWeight: 600 }}>
                   Sensor Information
                 </Typography>
-                <Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography sx={{ fontWeight: 500, mb: 1 }}>
                   <strong>Serial Number:</strong> {sensor.serialNumber}
                 </Typography>
-                <Typography>
+                <Typography sx={{ fontWeight: 500, mb: 1 }}>
                   <strong>Type:</strong> {sensor.type}
                 </Typography>
-                <Typography>
-                  <strong>Unit:</strong> {sensor.unit || "-"}
-                </Typography>
-                <Typography>
+                <Typography sx={{ display: "flex", alignItems: "center", fontWeight: 500 }}>
                   <strong>Status:</strong>
                   <Chip
                     size="small"
                     label={sensor.isActive ? "Active" : "Inactive"}
                     color={sensor.isActive ? "success" : "error"}
-                    sx={{ ml: 1 }}
+                    sx={{ ml: 1, fontWeight: 500 }}
                   />
                 </Typography>
               </Grid>
+              
               <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>
-                  Measurement Range
+                <Typography sx={{ fontWeight: 500, mb: 1 }}>
+                  <strong>Unit:</strong> {sensor.unit || "-"}
                 </Typography>
-                <Typography>
+                <Typography sx={{ fontWeight: 500, mb: 1 }}>
                   <strong>Min Value:</strong>{" "}
                   {sensor.minValue !== null
                     ? `${sensor.minValue} ${sensor.unit || ""}`
                     : "Not set"}
                 </Typography>
-                <Typography>
+                <Typography sx={{ fontWeight: 500 }}>
                   <strong>Max Value:</strong>{" "}
                   {sensor.maxValue !== null
                     ? `${sensor.maxValue} ${sensor.unit || ""}`
@@ -290,16 +302,16 @@ const SensorReadingsPage = () => {
               </Grid>
             </Grid>
           </Paper>
-
+  
           {/* Statistics Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: "100%" }}>
+              <Card sx={{ height: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 2 }}>
                 <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography color="text.secondary" gutterBottom sx={{ fontSize: "0.875rem" }}>
                     Latest Reading
                   </Typography>
-                  <Typography variant="h4" component="div">
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
                     {stats.latest
                       ? `${stats.latest.value} ${sensor.unit || ""}`
                       : "-"}
@@ -312,13 +324,14 @@ const SensorReadingsPage = () => {
                 </CardContent>
               </Card>
             </Grid>
+  
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: "100%" }}>
+              <Card sx={{ height: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 2 }}>
                 <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography color="text.secondary" gutterBottom sx={{ fontSize: "0.875rem" }}>
                     Minimum
                   </Typography>
-                  <Typography variant="h4" component="div">
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
                     {readings.length > 0
                       ? `${stats.min} ${sensor.unit || ""}`
                       : "-"}
@@ -329,13 +342,14 @@ const SensorReadingsPage = () => {
                 </CardContent>
               </Card>
             </Grid>
+  
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: "100%" }}>
+              <Card sx={{ height: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 2 }}>
                 <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography color="text.secondary" gutterBottom sx={{ fontSize: "0.875rem" }}>
                     Maximum
                   </Typography>
-                  <Typography variant="h4" component="div">
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
                     {readings.length > 0
                       ? `${stats.max} ${sensor.unit || ""}`
                       : "-"}
@@ -346,13 +360,14 @@ const SensorReadingsPage = () => {
                 </CardContent>
               </Card>
             </Grid>
+  
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: "100%" }}>
+              <Card sx={{ height: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderRadius: 2 }}>
                 <CardContent>
-                  <Typography color="text.secondary" gutterBottom>
+                  <Typography color="text.secondary" gutterBottom sx={{ fontSize: "0.875rem" }}>
                     Average
                   </Typography>
-                  <Typography variant="h4" component="div">
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
                     {readings.length > 0
                       ? `${stats.avg.toFixed(2)} ${sensor.unit || ""}`
                       : "-"}
@@ -364,12 +379,14 @@ const SensorReadingsPage = () => {
               </Card>
             </Grid>
           </Grid>
-
+  
           {/* Add Reading Form */}
-          <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper sx={{ p: 3, mb: 4, borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+            <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main, fontWeight: 600 }}>
               Add New Reading
             </Typography>
+            <Divider sx={{ mb: 2 }} />
+            
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <TextField
                 label={`Value (${sensor.unit || ""})`}
@@ -393,32 +410,39 @@ const SensorReadingsPage = () => {
                 startIcon={<AddIcon />}
                 onClick={handleAddReading}
                 disabled={isLoading}
+                sx={{ 
+                  borderRadius: 1,
+                  textTransform: "none",
+                  fontWeight: 500,
+                  boxShadow: "none"
+                }}
               >
                 Add Reading
               </Button>
             </Box>
           </Paper>
-
+  
           {/* Readings Table */}
-          <Paper sx={{ width: "100%", borderRadius: 2, overflow: "hidden" }}>
+          <Paper sx={{ width: "100%", borderRadius: 2, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
             <TableContainer>
               <Table>
-                <TableHead
-                  sx={{ backgroundColor: theme.palette.secondary.light }}
-                >
+                <TableHead sx={{ backgroundColor: theme.palette.secondary.light }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Value</TableCell>
-                    { isAuthenticated && user?.role === "ADMIN" && (
-                       
-                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    {isAuthenticated && user?.role === "ADMIN" && (
+                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                     )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {readings.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                      <TableCell 
+                        colSpan={isAuthenticated && user?.role === "ADMIN" ? 3 : 2} 
+                        align="center" 
+                        sx={{ py: 4 }}
+                      >
                         <Typography variant="body1" color="text.secondary">
                           No readings available
                         </Typography>
@@ -429,27 +453,28 @@ const SensorReadingsPage = () => {
                       <TableRow key={reading.id} hover>
                         <TableCell>{formatDate(reading.timestamp)}</TableCell>
                         <TableCell>
-                          <Typography variant="body1">
+                          <Typography variant="body1" sx={{ fontWeight: 500, color: theme.palette.primary.main }}>
                             {reading.value} {sensor.unit || ""}
                           </Typography>
                         </TableCell>
-
-                        { isAuthenticated && user?.role === "ADMIN" && (
-                       <>
-                        <TableCell>
-                          <Tooltip title="Delete Reading">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteReading(reading.id)}
-                              disabled={isLoading}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        
-                    </TableCell>
-                    </> )}
+                        {isAuthenticated && user?.role === "ADMIN" && (
+                          <TableCell>
+                            <Tooltip title="Delete Reading">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteReading(reading.id)}
+                                disabled={isLoading}
+                                sx={{ 
+                                  border: `1px solid ${theme.palette.divider}`,
+                                  borderRadius: 1
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

@@ -46,7 +46,6 @@ import DashboardControls from "../../components/dashboard/DashboardControls";
 import LatestTimestampCard from "../../components/dashboard/LatestTimestampCard";
 import AverageValueCardsGrid from "../../components/dashboard/AverageValueCardsGrid";
 import ActiveSensorsCard from "../../components/dashboard/ActiveSensorsCard";
-import ExceededValuesCard from "../../components/dashboard/ExceededValuesCard";
 import SensorChartsSection from "../../components/dashboard/SensorChartsSection";
 import NotificationsCard from "../../components/dashboard/NotificationsCard";
 
