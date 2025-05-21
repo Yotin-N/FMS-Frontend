@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import useAuth from "./hooks/useAuth";
 import Navbar from "./components/layout/Navbar";
 import theme from "./styles/theme";
+import AuthStatusHandler from "./components/auth/AuthStatusHandler";
 
 
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
@@ -79,6 +80,7 @@ const App = () => {
       <CssBaseline />
       <Router>
         <AuthProvider>
+          <AuthStatusHandler />
           <Box
             component="main"
             sx={{

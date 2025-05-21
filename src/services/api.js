@@ -13,19 +13,7 @@ const api = axios.create({
   },
 });
 
-let isRefreshing = false;
-let failedQueue = [];
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-}
 
 function decodeJwt(token) {
   try {
@@ -57,127 +45,18 @@ function decodeJwt(token) {
   }
 }
 
-const refreshToken = async () => {
-  try {
-    const userData = localStorage.getItem("farmUser");
-    
-    // If we don't have user data, we can't refresh
-    if (!userData || !userData.token) {
-      throw new Error("No user data found");
-    }
-    
-    // Call the token refresh endpoint
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
-      token: userData.token // Send the current token, even if expired
-    });
-    
-    // Update the stored token with the new one
-    const newUserData = {
-      ...JSON.parse(userData),
-      token: response.data.accessToken,
-      // Optionally update user information if it's returned
-      ...(response.data.user && { user: response.data.user })
-    };
-    
-    localStorage.setItem("farmUser", JSON.stringify(newUserData));
-    
-    return response.data.accessToken;
-  } catch (error) {
-    console.error("Error refreshing token:", error);
-    // Clear user data if refresh fails
-    localStorage.removeItem("farmUser");
-    // Only redirect to login if we get a 401 from the refresh attempt
-    if (error.response && error.response.status === 401) {
-      window.location.href = "/login";
-      localStorage.setItem("authError", "Your session has expired. Please log in again.");
-    }
-    throw error;
-  }
-};
 
-// Add a request interceptor
-api.interceptors.request.use(
-  (config) => {
-    const userData = localStorage.getItem("farmUser");
-    if (userData) {
-      try {
-        const parsedData = JSON.parse(userData);
-        const { token } = parsedData;
-        
-        if (token) {
-          // Check if token is already expired
-          const decoded = decodeJwt(token);
-          const currentTime = Date.now() / 1000;
-          
-          // For logging purposes
-          if (decoded.exp) {
-            const timeRemaining = decoded.exp - currentTime;
-            console.log(`Token expires in ${timeRemaining.toFixed(2)} seconds`);
-          }
 
-          // Add token to request header regardless of expiration
-          // The response interceptor will handle expired tokens
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// Add a response interceptor to handle token expiration
+
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // If error is unauthorized (401) and we haven't retried yet
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        // If a refresh is already in progress, add this request to the queue
-        return new Promise(function(resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(token => {
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
-            return api(originalRequest);
-          })
-          .catch(err => {
-            return Promise.reject(err);
-          });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        // Attempt to refresh the token
-        const newToken = await refreshToken();
-        
-        // Update the authorization header for the failed request
-        originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-        
-        // Process any queued requests with the new token
-        processQueue(null, newToken);
-        
-        // Retry the original request with the new token
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, process queue with error
-        processQueue(refreshError, null);
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.setItem("authError", "Your session has expired. Please log in again.");
+      window.location.href = '/login';
     }
-    
     return Promise.reject(error);
   }
 );
@@ -185,7 +64,12 @@ api.interceptors.response.use(
 // Auth API calls
 export const loginUser = async (credentials) => {
   try {
+    // The cookie will be set automatically by the browser
     const response = await api.post("/auth/login", credentials);
+    
+    // Store user info only (not token)
+    localStorage.setItem("farmUser", JSON.stringify(response.data.user));
+    
     return response.data;
   } catch (error) {
     console.error("Login error:", error);
@@ -581,6 +465,18 @@ export const searchUsersByEmail = async (email, farmId) => {
   } catch (error) {
     console.error("Error searching users:", error);
     throw error;
+  }
+};
+
+export const logoutUser = async () => {
+  try {
+    // Call a logout endpoint that clears the cookie
+    await api.post("/auth/logout");
+    localStorage.removeItem("farmUser");
+  } catch (error) {
+    console.error("Logout error:", error);
+    // Still remove user data even if logout fails
+    localStorage.removeItem("farmUser");
   }
 };
 
