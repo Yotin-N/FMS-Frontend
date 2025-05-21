@@ -1,4 +1,3 @@
-// src/pages/farm/FarmListPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -42,6 +41,7 @@ import {
 import FarmDialog from "../../components/farm/FarmDialog";
 import DeleteFarmDialog from "../../components/farm/DeleteFarmDialog";
 import FarmMembersDialog from "../../components/farm/members/FarmMembersDialog";
+import useAuth from "../../hooks/useAuth"; 
 
 const FarmListPage = () => {
   const theme = useTheme();
@@ -64,6 +64,8 @@ const FarmListPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState(null);
+  
+  const {isAuthenticated, user} = useAuth();
 
   // Load farms on component mount
   useEffect(() => {
@@ -426,6 +428,8 @@ const FarmListPage = () => {
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        { isAuthenticated && user?.role === "ADMIN" && (
+                          <>
                         <Tooltip title="Manage Members">
                           <IconButton
                             size="small"
@@ -453,6 +457,7 @@ const FarmListPage = () => {
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        </>)}
                       </Box>
                     </TableCell>
                   </TableRow>

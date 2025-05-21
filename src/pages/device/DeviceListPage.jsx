@@ -49,6 +49,7 @@ import {
 
 import { getFarms } from "../../services/api";
 import DeviceForm from "../../components/device/DeviceForm";
+import useAuth from "../../hooks/useAuth";
 
 const DeviceListPage = () => {
   const theme = useTheme();
@@ -79,6 +80,8 @@ const DeviceListPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
+
+  const {user, isAuthenticated} = useAuth();
 
   // Load farms on component mount
   useEffect(() => {
@@ -570,7 +573,11 @@ const DeviceListPage = () => {
                           >
                             <SensorsIcon fontSize="small" />
                           </IconButton>
+
+                          
                         </Tooltip>
+                        { isAuthenticated && user?.role === "ADMIN" && (
+                       <>
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
@@ -589,6 +596,7 @@ const DeviceListPage = () => {
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        </> )}
                       </Box>
                     </TableCell>
                   </TableRow>

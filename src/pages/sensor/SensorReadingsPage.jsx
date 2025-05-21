@@ -41,6 +41,7 @@ import {
   deleteSensorReading,
 } from "../../services/sensorApi";
 import { format, parseISO } from "date-fns";
+import useAuth from "../../hooks/useAuth";
 
 const SensorReadingsPage = () => {
   const theme = useTheme();
@@ -61,6 +62,8 @@ const SensorReadingsPage = () => {
     count: 0,
     latest: null,
   });
+
+  const {user, isAuthenticated} = useAuth();
 
   // Load sensor and its readings on component mount
   useEffect(() => {
@@ -406,7 +409,10 @@ const SensorReadingsPage = () => {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Value</TableCell>
+                    { isAuthenticated && user?.role === "ADMIN" && (
+                       
                     <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -427,6 +433,9 @@ const SensorReadingsPage = () => {
                             {reading.value} {sensor.unit || ""}
                           </Typography>
                         </TableCell>
+
+                        { isAuthenticated && user?.role === "ADMIN" && (
+                       <>
                         <TableCell>
                           <Tooltip title="Delete Reading">
                             <IconButton
@@ -438,7 +447,9 @@ const SensorReadingsPage = () => {
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                        </TableCell>
+                        
+                    </TableCell>
+                    </> )}
                       </TableRow>
                     ))
                   )}

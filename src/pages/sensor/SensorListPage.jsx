@@ -49,6 +49,7 @@ import {
   deleteSensor,
 } from "../../services/api";
 import SensorForm from "../../components/sensor/SensorForm";
+import useAuth from "../../hooks/useAuth";
 
 const SensorListPage = () => {
   const theme = useTheme();
@@ -84,6 +85,8 @@ const SensorListPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState(null);
+
+  const {user, isAuthenticated} = useAuth();
 
   // Load farms on component mount
   useEffect(() => {
@@ -684,6 +687,9 @@ const SensorListPage = () => {
                               <ShowChartIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          
+                          { isAuthenticated && user?.role === "ADMIN" && (
+                       <>
                           <Tooltip title="Edit">
                             <IconButton
                               size="small"
@@ -702,8 +708,10 @@ const SensorListPage = () => {
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          </> )}
                         </Box>
                       </TableCell>
+
                     </TableRow>
                   ))
                 )}

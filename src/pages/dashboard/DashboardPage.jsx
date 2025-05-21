@@ -304,7 +304,7 @@ const DashboardContent = () => {
 const DashboardPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -340,12 +340,17 @@ const DashboardPage = () => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "" },
-    { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms" },
-    { text: "Device Management", icon: <DevicesIcon />, path: "/devices" },
-    { text: "Sensor", icon: <SensorsIcon />, path: "/sensors" },
-    { text: "User Management", icon: <PeopleIcon />, path: "/users" },
+    { text: "Dashboard", icon: <DashboardIcon />, path: "", roles: ["ADMIN", "USER"] },
+    { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms", roles: ["ADMIN", "USER"] },
+    { text: "Device Management", icon: <DevicesIcon />, path: "/devices", roles: ["ADMIN", "USER"] },
+    { text: "Sensor", icon: <SensorsIcon />, path: "/sensors", roles: ["ADMIN", "USER"] },
+    { text: "User Management", icon: <PeopleIcon />, path: "/users", roles: ["ADMIN"] },
   ];
+
+  const filteredMenuItems = menuItems.filter(item => {
+    if (!item.roles) return true; 
+    return item.roles.includes(user?.role);
+  });
 
   const handleListItemClick = (index, path) => {
     setSelectedIndex(index);
@@ -385,7 +390,7 @@ const DashboardPage = () => {
         <Toolbar />
         <Box sx={{ overflow: "auto", overflowX: "hidden" }}>
           <List>
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <ListItem
                 key={item.text}
                 disablePadding
@@ -464,9 +469,14 @@ const DashboardPage = () => {
             <Route path="devices/*" element={<DeviceListPage />} />
             <Route path="sensors" element={<SensorListPage />} />
             <Route path="sensors/:id/readings" element={<SensorReadingsPage />} />
-            <Route path="users/*" element={<UserListPage />} />
-            <Route path="users/create" element={<CreateUserPage />} />
-            <Route path="users/edit/:id" element={<EditUserPage />} />
+
+            {isAuthenticated && user?.role === "ADMIN" && (
+    <>
+      <Route path="users/*" element={<UserListPage />} />
+      <Route path="users/create" element={<CreateUserPage />} />
+      <Route path="users/edit/:id" element={<EditUserPage />} />
+    </>
+  )}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Container>
