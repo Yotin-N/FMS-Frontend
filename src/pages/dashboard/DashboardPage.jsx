@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,6 +26,7 @@ import AgricultureIcon from "@mui/icons-material/Agriculture";
 import DevicesIcon from "@mui/icons-material/Devices";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import PeopleIcon from "@mui/icons-material/People";
+import SettingsIcon from "@mui/icons-material/Settings"; // Add this import
 import { getFarms } from "../../services/api";
 import {
   getDashboardSummary,
@@ -40,6 +42,7 @@ import SensorReadingsPage from "../sensor/SensorReadingsPage";
 import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
+import SettingsPage from "../settings/SettingsPage"; // Add this import
 
 // Dashboard components
 import DashboardControls from "../../components/dashboard/DashboardControls";
@@ -99,16 +102,22 @@ const DashboardContent = () => {
 
   useEffect(() => {
     console.log("DashboardContent - dashboardData:", dashboardData);
-    
+
     if (dashboardData && dashboardData.averages) {
       // Initialize visibleSensors with all available sensor types
       const sensorTypes = Object.keys(dashboardData.averages);
-      console.log("DashboardContent - Setting visibleSensors from dashboardData:", sensorTypes);
+      console.log(
+        "DashboardContent - Setting visibleSensors from dashboardData:",
+        sensorTypes
+      );
       setVisibleSensors(sensorTypes);
     } else if (chartData && chartData.length > 0) {
       // Fallback to chart data if dashboard data is not available
-      const chartTypes = chartData.map(chart => chart.type);
-      console.log("DashboardContent - Setting visibleSensors from chartData:", chartTypes);
+      const chartTypes = chartData.map((chart) => chart.type);
+      console.log(
+        "DashboardContent - Setting visibleSensors from chartData:",
+        chartTypes
+      );
       setVisibleSensors(chartTypes);
     }
   }, [dashboardData, chartData]);
@@ -124,9 +133,9 @@ const DashboardContent = () => {
   }, [selectedFarmId, timeRange]);
 
   useEffect(() => {
-    console.log('DashboardContent - dashboardData:', dashboardData);
-    console.log('DashboardContent - visibleSensors:', visibleSensors);
-    
+    console.log("DashboardContent - dashboardData:", dashboardData);
+    console.log("DashboardContent - visibleSensors:", visibleSensors);
+
     if (dashboardData && dashboardData.averages) {
       Object.entries(dashboardData.averages).forEach(([type, data]) => {
         console.log(`Sensor ${type} data:`, {
@@ -135,7 +144,7 @@ const DashboardContent = () => {
           gaugeMax: data.gaugeMax,
           severityColor: data.severityColor,
           thresholdRanges: data.thresholdRanges,
-          unit: data.unit
+          unit: data.unit,
         });
       });
     }
@@ -193,8 +202,10 @@ const DashboardContent = () => {
 
   const handleSensorConfigClick = (sensorType) => {
     console.log(`Config clicked for sensor: ${sensorType}`);
-    // You can implement sensor configuration functionality here
-    // For now, this is just a placeholder
+    // Navigate to settings page with the specific sensor type
+    navigate(
+      `/dashboard/settings?farmId=${selectedFarmId}&sensorType=${sensorType}`
+    );
   };
 
   const loadChartData = async () => {
@@ -276,26 +287,33 @@ const DashboardContent = () => {
       {selectedFarmId && (
         <Box sx={{ width: "100%" }}>
           {/* Left column with side cards */}
-          <Box sx={{ display: "flex", width: "100%", flexDirection: { xs: "column", md: "row" }, gap: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              width: "100%",
+              flexDirection: { xs: "column", md: "row" },
+              gap: 3,
+            }}
+          >
             {/* Left sidebar with cards */}
-            <Box 
-              sx={{ 
-                width: { xs: "100%", md: "25%" }, 
+            <Box
+              sx={{
+                width: { xs: "100%", md: "25%" },
                 minWidth: { md: "250px" },
                 maxWidth: { md: "350px" },
-                order: { xs: 2, md: 1 }
+                order: { xs: 2, md: 1 },
               }}
             >
               {/* Date Time Card */}
-              <LatestTimestampCard 
+              <LatestTimestampCard
                 timestamp={dashboardData?.latestTimestamp}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
               />
 
               {/* Active Sensors Card */}
-              <ActiveSensorsCard 
-                averages={dashboardData?.averages} 
+              <ActiveSensorsCard
+                averages={dashboardData?.averages}
                 visibleSensors={visibleSensors}
                 onToggleSensor={handleToggleSensor}
               />
@@ -305,17 +323,23 @@ const DashboardContent = () => {
             </Box>
 
             {/* Container for sensor values and charts (moved to right) */}
-            <Box sx={{ flex: 1, width: { xs: "100%", md: "75%" }, order: { xs: 1, md: 2 } }}>
+            <Box
+              sx={{
+                flex: 1,
+                width: { xs: "100%", md: "75%" },
+                order: { xs: 1, md: 2 },
+              }}
+            >
               {/* Sensor Values Cards */}
-              <AverageValueCardsGrid 
-  sensorData={dashboardData?.averages} 
-  visibleSensors={visibleSensors}
-  onSensorConfigClick={handleSensorConfigClick} 
-/>
-              
+              <AverageValueCardsGrid
+                sensorData={dashboardData?.averages}
+                visibleSensors={visibleSensors}
+                onSensorConfigClick={handleSensorConfigClick}
+              />
+
               {/* Charts Section */}
-              <SensorChartsSection 
-                chartData={chartData} 
+              <SensorChartsSection
+                chartData={chartData}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
                 visibleSensors={visibleSensors}
@@ -355,9 +379,15 @@ const DashboardPage = () => {
       setSelectedIndex(2);
     } else if (pathname.includes("/dashboard/sensors")) {
       setSelectedIndex(3);
-    } else if (pathname.includes("/dashboard/users")) {
+    } else if (pathname.includes("/dashboard/settings")) {
       setSelectedIndex(4);
-    } else if (pathname === "/dashboard" || pathname === "/dashboard/" || pathname.startsWith("/dashboard?")) {
+    } else if (pathname.includes("/dashboard/users")) {
+      setSelectedIndex(5);
+    } else if (
+      pathname === "/dashboard" ||
+      pathname === "/dashboard/" ||
+      pathname.startsWith("/dashboard?")
+    ) {
       setSelectedIndex(0);
     }
   }, [location.pathname]);
@@ -367,15 +397,46 @@ const DashboardPage = () => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "", roles: ["ADMIN", "USER"] },
-    { text: "Farm Management", icon: <AgricultureIcon />, path: "/farms", roles: ["ADMIN", "USER"] },
-    { text: "Device Management", icon: <DevicesIcon />, path: "/devices", roles: ["ADMIN", "USER"] },
-    { text: "Sensor", icon: <SensorsIcon />, path: "/sensors", roles: ["ADMIN", "USER"] },
-    { text: "User Management", icon: <PeopleIcon />, path: "/users", roles: ["ADMIN"] },
+    {
+      text: "Dashboard",
+      icon: <DashboardIcon />,
+      path: "",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Farm Management",
+      icon: <AgricultureIcon />,
+      path: "/farms",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Device Management",
+      icon: <DevicesIcon />,
+      path: "/devices",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Sensor",
+      icon: <SensorsIcon />,
+      path: "/sensors",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Settings",
+      icon: <SettingsIcon />,
+      path: "/settings",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "User Management",
+      icon: <PeopleIcon />,
+      path: "/users",
+      roles: ["ADMIN"],
+    },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => {
-    if (!item.roles) return true; 
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!item.roles) return true;
     return item.roles.includes(user?.role);
   });
 
@@ -485,7 +546,7 @@ const DashboardPage = () => {
           minHeight: "100vh",
           width: "100%",
           maxWidth: "100%",
-          overflowX: "hidden"
+          overflowX: "hidden",
         }}
       >
         <Toolbar />
@@ -495,15 +556,19 @@ const DashboardPage = () => {
             <Route path="farms/*" element={<FarmListPage />} />
             <Route path="devices/*" element={<DeviceListPage />} />
             <Route path="sensors" element={<SensorListPage />} />
-            <Route path="sensors/:id/readings" element={<SensorReadingsPage />} />
+            <Route
+              path="sensors/:id/readings"
+              element={<SensorReadingsPage />}
+            />
+            <Route path="settings/*" element={<SettingsPage />} />
 
             {isAuthenticated && user?.role === "ADMIN" && (
-    <>
-      <Route path="users/*" element={<UserListPage />} />
-      <Route path="users/create" element={<CreateUserPage />} />
-      <Route path="users/edit/:id" element={<EditUserPage />} />
-    </>
-  )}
+              <>
+                <Route path="users/*" element={<UserListPage />} />
+                <Route path="users/create" element={<CreateUserPage />} />
+                <Route path="users/edit/:id" element={<EditUserPage />} />
+              </>
+            )}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Container>
