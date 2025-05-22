@@ -1,12 +1,13 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
-import { 
-  Box, 
-  Button, 
-  Card, 
-  CardContent, 
-  IconButton, 
-  Typography, 
-  useTheme 
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  IconButton,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -21,27 +22,25 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }) => {
+const SensorChartsSection = ({
+  chartData,
+  onRefresh,
+  isLoading,
+  visibleSensors,
+}) => {
   const theme = useTheme();
 
-  // Helper to get color for each sensor type
   const getSensorTypeColor = (type) => {
     const colorMap = {
-      pH: "#ff9800", 
-      DO: "#ff9800", 
-      Temperature: "#f44336", 
-      TempA: "#f44336", 
-      TempB: "#ef5350", 
-      TempC: "#f44336",
-      SALT: "#2196f3",
-      Saltlinity: "#2196f3", 
-      NHx: "#9c27b0", 
-      NH3: "#9c27b0",
-      EC: "#00bcd4", 
-      TDS: "#8bc34a", 
-      ORP: "#3f51b5",
+      TempA: "#f44336",
+      TempB: "#ff5722",
+      TempC: "#ff9800",
+      DO: "#4caf50",
+      Salinity: "#03a9f4",
+      pH: "#8bc34a",
+      Ammonia: "#9c27b0",
+      Turbidity: "#0A5EB0",
       NO2: "#673ab7",
-      NO: "#673ab7",
     };
     return colorMap[type] || theme.palette.grey[500];
   };
@@ -49,13 +48,13 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
   // Function to check if data spans multiple days
   const doesDataSpanMultipleDays = (chartData) => {
     if (!Array.isArray(chartData) || chartData.length === 0) return false;
-    
+
     // Collect all dates from all sensors
     const allDates = [];
-    
-    chartData.forEach(sensor => {
+
+    chartData.forEach((sensor) => {
       if (Array.isArray(sensor.data)) {
-        sensor.data.forEach(point => {
+        sensor.data.forEach((point) => {
           if (point.time) {
             // Extract just the date part (without time)
             const date = new Date(point.time);
@@ -66,7 +65,7 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
         });
       }
     });
-    
+
     // If we have unique dates more than 1, data spans multiple days
     const uniqueDates = [...new Set(allDates)];
     return uniqueDates.length > 1;
@@ -98,15 +97,16 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
 
   // Process and validate chart data
   const validChartData = Array.isArray(chartData) ? chartData : [];
-  
+
   // FIXED: Explicitly filter the chart data based on visibleSensors array
   // Only include a sensor if it exists in visibleSensors array
-  const filteredChartData = validChartData.filter(sensorData => 
-    visibleSensors && visibleSensors.includes(sensorData.type)
+  const filteredChartData = validChartData.filter(
+    (sensorData) => visibleSensors && visibleSensors.includes(sensorData.type)
   );
 
   // If no charts are selected but there is chart data available, show a message
-  const showNoChartsMessage = filteredChartData.length === 0 && validChartData.length > 0;
+  const showNoChartsMessage =
+    filteredChartData.length === 0 && validChartData.length > 0;
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -136,7 +136,8 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                 No sensor charts selected
               </Typography>
               <Typography color="text.secondary" variant="body2">
-                Toggle sensors in the Active Sensors panel to display their charts
+                Toggle sensors in the Active Sensors panel to display their
+                charts
               </Typography>
             </Box>
           </CardContent>
@@ -163,16 +164,21 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                 }}
               >
                 <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                  {sensorTypeData.type ? sensorTypeData.type.toUpperCase() : "UNKNOWN"} Chart
+                  {sensorTypeData.type
+                    ? sensorTypeData.type.toUpperCase()
+                    : "UNKNOWN"}{" "}
+                  Chart
                 </Typography>
                 <IconButton size="small">
                   <MoreHorizIcon />
                 </IconButton>
               </Box>
-              {sensorTypeData.data && Array.isArray(sensorTypeData.data) && sensorTypeData.data.length > 0 ? (
+              {sensorTypeData.data &&
+              Array.isArray(sensorTypeData.data) &&
+              sensorTypeData.data.length > 0 ? (
                 <Box sx={{ width: "100%", height: 200 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart 
+                    <AreaChart
                       data={sensorTypeData.data}
                       margin={{ top: 10, right: 10, left: 0, bottom: 40 }}
                     >
@@ -186,16 +192,12 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                         >
                           <stop
                             offset="5%"
-                            stopColor={getSensorTypeColor(
-                              sensorTypeData.type
-                            )}
+                            stopColor={getSensorTypeColor(sensorTypeData.type)}
                             stopOpacity={0.8}
                           />
                           <stop
                             offset="95%"
-                            stopColor={getSensorTypeColor(
-                              sensorTypeData.type
-                            )}
+                            stopColor={getSensorTypeColor(sensorTypeData.type)}
                             stopOpacity={0.1}
                           />
                         </linearGradient>
@@ -211,10 +213,10 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                         stroke="#888"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ 
+                        tick={{
                           fontSize: 12,
-                          fill: '#666',
-                          fontFamily: 'inherit'
+                          fill: "#666",
+                          fontFamily: "inherit",
                         }}
                         angle={-45}
                         textAnchor="end"
@@ -226,15 +228,15 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                         stroke="#888"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ 
+                        tick={{
                           fontSize: 12,
-                          fill: '#666',
-                          fontFamily: 'inherit'
+                          fill: "#666",
+                          fontFamily: "inherit",
                         }}
                       />
                       <Tooltip
                         formatter={(value) => [
-                          typeof value === 'number' ? value.toFixed(2) : 'N/A',
+                          typeof value === "number" ? value.toFixed(2) : "N/A",
                           sensorTypeData.type,
                         ]}
                         labelFormatter={formatTooltipDate}
@@ -243,7 +245,7 @@ const SensorChartsSection = ({ chartData, onRefresh, isLoading, visibleSensors }
                           border: "1px solid #ddd",
                           borderRadius: 4,
                           fontSize: 12,
-                          fontFamily: 'inherit'
+                          fontFamily: "inherit",
                         }}
                       />
                       <Area

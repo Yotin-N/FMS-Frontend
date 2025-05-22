@@ -60,7 +60,7 @@ const SettingsPage = () => {
     { type: "Salinity", name: "Salinity", unit: "ppt", color: "#03a9f4" },
     { type: "pH", name: "pH Level", unit: "pH", color: "#8bc34a" },
     { type: "Ammonia", name: "Ammonia", unit: "PPM", color: "#9c27b0" },
-    { type: "Turbidity", name: "Turbidity", unit: "cm", color: "#00bcd4" },
+    { type: "Turbidity", name: "Turbidity", unit: "cm", color: "#0A5EB0" },
     { type: "NO2", name: "Nitrite", unit: "", color: "#673ab7" },
   ];
 
