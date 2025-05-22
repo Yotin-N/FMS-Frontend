@@ -123,6 +123,24 @@ const DashboardContent = () => {
     }
   }, [selectedFarmId, timeRange]);
 
+  useEffect(() => {
+    console.log('DashboardContent - dashboardData:', dashboardData);
+    console.log('DashboardContent - visibleSensors:', visibleSensors);
+    
+    if (dashboardData && dashboardData.averages) {
+      Object.entries(dashboardData.averages).forEach(([type, data]) => {
+        console.log(`Sensor ${type} data:`, {
+          latestValue: data.latestValue,
+          gaugeMin: data.gaugeMin,
+          gaugeMax: data.gaugeMax,
+          severityColor: data.severityColor,
+          thresholdRanges: data.thresholdRanges,
+          unit: data.unit
+        });
+      });
+    }
+  }, [dashboardData, visibleSensors]);
+
   const loadFarms = async () => {
     setIsLoading(true);
     setError(null);
@@ -171,6 +189,12 @@ const DashboardContent = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSensorConfigClick = (sensorType) => {
+    console.log(`Config clicked for sensor: ${sensorType}`);
+    // You can implement sensor configuration functionality here
+    // For now, this is just a placeholder
   };
 
   const loadChartData = async () => {
@@ -283,7 +307,11 @@ const DashboardContent = () => {
             {/* Container for sensor values and charts (moved to right) */}
             <Box sx={{ flex: 1, width: { xs: "100%", md: "75%" }, order: { xs: 1, md: 2 } }}>
               {/* Sensor Values Cards */}
-              <AverageValueCardsGrid averages={dashboardData?.averages} visibleSensors= {visibleSensors} />
+              <AverageValueCardsGrid 
+  sensorData={dashboardData?.averages} 
+  visibleSensors={visibleSensors}
+  onSensorConfigClick={handleSensorConfigClick} 
+/>
               
               {/* Charts Section */}
               <SensorChartsSection 

@@ -4,10 +4,12 @@ export const SensorType = {
   TempC: "TempC",
   pH: "pH",
   DO: "DO",
-  Saltlinity: "Saltlinity",
-  NHx: "NHx",
-  EC: "EC",
-  TDS: "TDS",
-  ORP: "ORP",
+  Salinity: "Salinity",
+  Ammonia : 'Ammonia', // Ammonia (PPM)
+  Turbidity : 'Turbidity', // Turbidity (cm)
+  NO2 : 'NO2',         // Nitrite
 };
 export default SensorType;
+
+
+ 

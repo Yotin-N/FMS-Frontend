@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 
-const EnhancedSensorGauge = ({ 
+const LatestValueSensorGauge = ({ 
   type, 
   value, 
   unit, 
@@ -15,6 +15,27 @@ const EnhancedSensorGauge = ({
   onConfigClick 
 }) => {
   const theme = useTheme();
+  
+  // Debug logging
+  console.log(`LatestValueSensorGauge - ${type}:`, {
+    value,
+    minValue,
+    maxValue,
+    severityColor,
+    thresholdRanges
+  });
+
+  // Validate required props
+  if (value === null || value === undefined) {
+    console.warn(`No value provided for sensor ${type}`);
+    return (
+      <Box sx={{ position: 'relative', textAlign: 'center', p: 2 }}>
+        <Typography variant="h6">{type}</Typography>
+        <Typography color="text.secondary">No Data</Typography>
+      </Box>
+    );
+  }
+
   const circleSize = 140;
   const strokeWidth = 12;
   const radius = (circleSize - strokeWidth) / 2;
@@ -75,25 +96,27 @@ const EnhancedSensorGauge = ({
   return (
     <Box sx={{ position: 'relative', textAlign: 'center' }}>
       {/* Settings Button */}
-      <IconButton
-        size="small"
-        onClick={() => onConfigClick && onConfigClick(type)}
-        sx={{ 
-          position: 'absolute', 
-          top: -8, 
-          right: -8, 
-          zIndex: 3,
-          backgroundColor: 'rgba(255,255,255,0.9)',
-          border: `1px solid ${theme.palette.divider}`,
-          '&:hover': { 
-            backgroundColor: 'rgba(255,255,255,1)',
-            transform: 'scale(1.1)'
-          },
-          transition: 'all 0.2s'
-        }}
-      >
-        <SettingsIcon fontSize="small" />
-      </IconButton>
+      {onConfigClick && (
+        <IconButton
+          size="small"
+          onClick={() => onConfigClick(type)}
+          sx={{ 
+            position: 'absolute', 
+            top: -8, 
+            right: -8, 
+            zIndex: 3,
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            border: `1px solid ${theme.palette.divider}`,
+            '&:hover': { 
+              backgroundColor: 'rgba(255,255,255,1)',
+              transform: 'scale(1.1)'
+            },
+            transition: 'all 0.2s'
+          }}
+        >
+          <SettingsIcon fontSize="small" />
+        </IconButton>
+      )}
 
       {/* Gauge Circle Container */}
       <Box sx={{ 
@@ -250,4 +273,4 @@ const EnhancedSensorGauge = ({
   );
 };
 
-export default EnhancedSensorGauge;
+export default LatestValueSensorGauge;

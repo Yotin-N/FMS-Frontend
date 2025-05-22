@@ -141,16 +141,17 @@ const SensorForm = ({
     const unitMap = {
       PH: "pH",
       TEMP: "°C",
-      SALINITY: "ppt",
+      Salinity: "ppt",
       DO: "mg/L",
-      ORP: "mV",
-      AMMONIA: "mg/L",
-      NITRITE: "mg/L",
-      NITRATE: "mg/L",
+      AMMONIA: "PPM",
+      NO2: "",
+      Turbidity: "cm"
     };
 
     return unitMap[type] || "";
   };
+
+
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
