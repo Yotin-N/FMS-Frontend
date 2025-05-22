@@ -1,12 +1,37 @@
-import React from 'react';
-import { Box, Typography, IconButton, Tooltip, useTheme, Grid } from '@mui/material';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import React from "react";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  useTheme,
+  Grid,
+} from "@mui/material";
+import {
+  WarningAmber as WarningAmberIcon,
+  ErrorOutline as ErrorOutlineIcon,
+  ReportProblemOutlined as ReportProblemOutlinedIcon,
+} from "@mui/icons-material";
 
-const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick }) => {
+const AverageValueCardsGrid = ({
+  sensorData,
+  visibleSensors,
+  onSensorConfigClick,
+}) => {
   const theme = useTheme();
 
   // Enhanced Gauge Circle Component
-  const GaugeCircle = ({ type, value, unit, severityColor, severityLabel, thresholdRanges, minValue, maxValue }) => {
+  const GaugeCircle = ({
+    type,
+    value,
+    unit,
+    severity,
+    severityColor,
+    suggestion,
+    thresholdRanges,
+    minValue,
+    maxValue,
+  }) => {
     const circleSize = 140;
     const strokeWidth = 12;
     const radius = (circleSize - strokeWidth) / 2;
@@ -17,78 +42,117 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
     const getGaugeRange = () => {
       if (thresholdRanges && thresholdRanges.length > 0) {
         const allValues = [];
-        
-        thresholdRanges.forEach(range => {
-          if (range.min !== null && range.min !== undefined) allValues.push(range.min);
-          if (range.max !== null && range.max !== undefined) allValues.push(range.max);
+
+        thresholdRanges.forEach((range) => {
+          if (range.min !== null && range.min !== undefined)
+            allValues.push(range.min);
+          if (range.max !== null && range.max !== undefined)
+            allValues.push(range.max);
         });
-        
+
         if (allValues.length > 0) {
-          return { 
-            min: Math.min(...allValues), 
-            max: Math.max(...allValues) 
+          return {
+            min: Math.min(...allValues),
+            max: Math.max(...allValues),
           };
         }
       }
-      
+
       return { min: minValue || 0, max: maxValue || 100 };
     };
 
     const { min: gaugeMin, max: gaugeMax } = getGaugeRange();
-    
+
     // Calculate gauge fill percentage
     const valueRange = gaugeMax - gaugeMin;
     const normalizedValue = Math.max(gaugeMin, Math.min(gaugeMax, value || 0));
-    const valuePosition = valueRange > 0 ? ((normalizedValue - gaugeMin) / valueRange) : 0;
-    
+    const valuePosition =
+      valueRange > 0 ? (normalizedValue - gaugeMin) / valueRange : 0;
+
     // Gauge settings (270 degrees arc)
     const gaugeDegrees = 270;
     const gaugeCircumference = (circumference * gaugeDegrees) / 360;
     const dashOffset = gaugeCircumference * (1 - valuePosition);
-    
+
     const gaugeColor = severityColor || theme.palette.primary.main;
-    const displayValue = value !== null && value !== undefined ? 
-      Number(value).toFixed(1) : 'N/A';
+    const displayValue =
+      value !== null && value !== undefined ? Number(value).toFixed(1) : "N/A";
+
+    // Determine if alert icon should be visible
+    const isAlertVisible =
+      severity && severity !== "normal" && severity !== "green";
+
+    // Get appropriate alert icon based on severity
+    const getAlertIcon = () => {
+      if (!isAlertVisible) return null;
+
+      switch (severity) {
+        case "critical":
+        case "error":
+          return <ErrorOutlineIcon fontSize="small" />;
+        case "warning":
+          return <WarningAmberIcon fontSize="small" />;
+        default:
+          return <ReportProblemOutlinedIcon fontSize="small" />;
+      }
+    };
 
     return (
-      <Box sx={{ 
-        position: 'relative',
-        textAlign: 'center',
-        mb: 2
-      }}>
-        {onSensorConfigClick && (
-          <IconButton
-            size="small"
-            onClick={() => onSensorConfigClick(type)}
-            sx={{ 
-              position: 'absolute', 
-              top: -8, 
-              right: -8, 
-              zIndex: 3,
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              border: `1px solid ${theme.palette.divider}`,
-              '&:hover': { 
-                backgroundColor: 'rgba(255,255,255,1)',
-                transform: 'scale(1.1)'
-              },
-              transition: 'all 0.2s'
-            }}
+      <Box
+        sx={{
+          position: "relative",
+          textAlign: "center",
+          mb: 2,
+        }}
+      >
+        {/* Alert Icon (conditionally visible) */}
+        {isAlertVisible && onSensorConfigClick && (
+          <Tooltip
+            title={suggestion || `${severity} status detected`}
+            placement="top"
+            arrow
           >
-            <SettingsIcon fontSize="small" />
-          </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => onSensorConfigClick(type)}
+              sx={{
+                position: "absolute",
+                top: -8,
+                right: -10,
+                zIndex: 3,
+                backgroundColor: "rgba(255,255,255,0.9)",
+                border: `1px solid ${theme.palette.divider}`,
+                color: severityColor || theme.palette.warning.main,
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,1)",
+                  transform: "scale(1.1)",
+                  color: severityColor || theme.palette.warning.dark,
+                },
+                transition: "all 0.2s",
+              }}
+            >
+              {getAlertIcon()}
+            </IconButton>
+          </Tooltip>
         )}
 
-        <Box sx={{ 
-          position: 'relative', 
-          width: circleSize, 
-          height: circleSize, 
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
+        <Box
+          sx={{
+            position: "relative",
+            width: circleSize,
+            height: circleSize,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {/* Background arc */}
-          <svg width={circleSize} height={circleSize} style={{ position: 'absolute' }}>
+          <svg
+            width={circleSize}
+            height={circleSize}
+            style={{ position: "absolute" }}
+          >
             <circle
               cx={circleSize / 2}
               cy={circleSize / 2}
@@ -99,12 +163,18 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
               strokeDasharray={`${gaugeCircumference} ${circumference}`}
               strokeDashoffset={0}
               strokeLinecap="round"
-              transform={`rotate(${startAngle} ${circleSize / 2} ${circleSize / 2})`}
+              transform={`rotate(${startAngle} ${circleSize / 2} ${
+                circleSize / 2
+              })`}
             />
           </svg>
-          
+
           {/* Progress arc */}
-          <svg width={circleSize} height={circleSize} style={{ position: 'absolute' }}>
+          <svg
+            width={circleSize}
+            height={circleSize}
+            style={{ position: "absolute" }}
+          >
             <circle
               cx={circleSize / 2}
               cy={circleSize / 2}
@@ -115,51 +185,59 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
               strokeDasharray={`${gaugeCircumference} ${circumference}`}
               strokeDashoffset={dashOffset}
               strokeLinecap="round"
-              transform={`rotate(${startAngle} ${circleSize / 2} ${circleSize / 2})`}
+              transform={`rotate(${startAngle} ${circleSize / 2} ${
+                circleSize / 2
+              })`}
               style={{
-                transition: 'stroke-dashoffset 1s ease-in-out, stroke 0.3s ease',
+                transition:
+                  "stroke-dashoffset 1s ease-in-out, stroke 0.3s ease",
               }}
             />
           </svg>
-          
+
           {/* Center text */}
-          <Box sx={{ 
-            textAlign: 'center', 
-            position: 'relative',
-            zIndex: 1
-          }}>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                fontWeight: 600, 
-                fontSize: '1.1rem',
+          <Box
+            sx={{
+              textAlign: "center",
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 600,
+                fontSize: "1.1rem",
                 color: theme.palette.text.primary,
-                mb: 0.5
+                mb: 0.5,
               }}
             >
               {type}
             </Typography>
-            <Typography 
-              variant="h5" 
-              component="div" 
-              sx={{ 
-                fontWeight: 700, 
-                color: displayValue === 'N/A' ? theme.palette.text.disabled : gaugeColor,
+            <Typography
+              variant="h5"
+              component="div"
+              sx={{
+                fontWeight: 700,
+                color:
+                  displayValue === "N/A"
+                    ? theme.palette.text.disabled
+                    : gaugeColor,
                 lineHeight: 1,
-                fontSize: '1.8rem'
+                fontSize: "1.8rem",
               }}
             >
               {displayValue}
             </Typography>
             {unit && (
-              <Typography 
-                variant="caption" 
-                component="div" 
-                sx={{ 
+              <Typography
+                variant="caption"
+                component="div"
+                sx={{
                   color: theme.palette.text.secondary,
                   fontWeight: 500,
-                  fontSize: '0.8rem'
+                  fontSize: "0.8rem",
                 }}
               >
                 {unit}
@@ -167,50 +245,15 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
             )}
           </Box>
         </Box>
-
-        {/* Min/Max indicators
-        <Box sx={{ 
-          position: 'relative',
-          width: circleSize,
-          margin: '0 auto',
-          height: 20
-        }}>
-          <Typography
-            variant="caption"
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              fontSize: '0.75rem',
-              color: theme.palette.text.secondary,
-              fontWeight: 500
-            }}
-          >
-            {gaugeMin}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              fontSize: '0.75rem',
-              color: theme.palette.text.secondary,
-              fontWeight: 500
-            }}
-          >
-            {gaugeMax}
-          </Typography>
-        </Box> */}
-
-        
       </Box>
     );
   };
 
-  const sensors = sensorData ? 
-    Object.entries(sensorData).filter(([type]) => visibleSensors.includes(type)) :
-    [];
+  const sensors = sensorData
+    ? Object.entries(sensorData).filter(([type]) =>
+        visibleSensors.includes(type)
+      )
+    : [];
 
   if (sensors.length === 0) {
     return (
@@ -226,10 +269,9 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
               }}
             >
               <Typography variant="body1" color="text.secondary">
-                {sensorData && Object.keys(sensorData).length > 0 
+                {sensorData && Object.keys(sensorData).length > 0
                   ? "Toggle sensors in the Active Sensors panel to display their readings"
-                  : "No sensor data available"
-                }
+                  : "No sensor data available"}
               </Typography>
             </Box>
           </Grid>
@@ -242,18 +284,21 @@ const AverageValueCardsGrid = ({ sensorData, visibleSensors, onSensorConfigClick
     <Box sx={{ width: "100%", mb: 4 }}>
       <Grid container spacing={3}>
         {sensors.map(([type, data]) => {
-          const currentValue = data.latestValue !== null && data.latestValue !== undefined 
-            ? data.latestValue 
-            : data.average;
-          
+          const currentValue =
+            data.latestValue !== null && data.latestValue !== undefined
+              ? data.latestValue
+              : data.average;
+
           return (
             <Grid item xs={6} sm={4} md={3} lg={2} key={type}>
-              <GaugeCircle 
-                type={type} 
+              <GaugeCircle
+                type={type}
                 value={currentValue}
                 unit={data.unit}
+                severity={data.severity}
                 severityColor={data.severityColor}
                 severityLabel={data.severityLabel}
+                suggestion={data.suggestion}
                 thresholdRanges={data.thresholdRanges}
                 minValue={data.gaugeMin}
                 maxValue={data.gaugeMax}

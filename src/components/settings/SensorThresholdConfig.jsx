@@ -19,6 +19,8 @@ import {
   Checkbox,
   Grid,
   CircularProgress,
+  DialogTitle,
+  DialogContent,
   DialogActions,
 } from "@mui/material";
 import {
@@ -26,6 +28,7 @@ import {
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
   RestoreFromTrash as RestoreIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import {
   getFarmThresholds,
@@ -265,8 +268,18 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Modal Title */}
+      <DialogTitle sx={{ pb: 1 }}>
+        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+          Configure {sensorType} Thresholds
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Set threshold ranges for {sensorType} sensor monitoring
+        </Typography>
+      </DialogTitle>
+
       {/* Scrollable Content Area */}
-      <Box sx={{ flex: 1, overflow: "auto", p: 3 }}>
+      <DialogContent sx={{ flex: 1, overflow: "auto", p: 3 }}>
         {/* Info Chip */}
         <Box sx={{ mb: 3 }}>
           <Chip
@@ -480,7 +493,7 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
             ))}
           </Grid>
         )}
-      </Box>
+      </DialogContent>
 
       {/* Fixed Action Buttons at Bottom */}
       <DialogActions
@@ -488,6 +501,7 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
           p: 3,
           borderTop: "1px solid #e0e0e0",
           backgroundColor: "#fafafa",
+          gap: 1,
         }}
       >
         <Button
@@ -507,6 +521,15 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
           sx={{ textTransform: "none" }}
         >
           {isSaving ? "Resetting..." : "Reset to Default"}
+        </Button>
+        <Box sx={{ flexGrow: 1 }} />
+        <Button
+          variant="outlined"
+          onClick={() => window.history.back()}
+          disabled={isSaving}
+          sx={{ textTransform: "none" }}
+        >
+          Cancel
         </Button>
         <Button
           variant="contained"
