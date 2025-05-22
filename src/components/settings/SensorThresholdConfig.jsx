@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -13,17 +14,15 @@ import {
   Divider,
   Card,
   CardContent,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
   FormControlLabel,
   Checkbox,
+  Grid,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  ExpandMore as ExpandMoreIcon,
   Refresh as RefreshIcon,
   RestoreFromTrash as RestoreIcon,
 } from "@mui/icons-material";
@@ -37,7 +36,7 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
   // State
   const [thresholds, setThresholds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Available severity levels
   const severityLevels = [
@@ -46,7 +45,7 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
     { value: "normal", label: "Normal", color: "#4caf50" },
   ];
 
-  // Load thresholds on component mount
+  // Load thresholds on component mount or when props change
   useEffect(() => {
     if (farmId && sensorType) {
       loadThresholds();
@@ -98,43 +97,62 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
       colorCode: "#4caf50",
       label: "New Range",
     };
-    setThresholds([...thresholds, newThreshold]);
+    setThresholds((prev) => [...prev, newThreshold]);
   };
 
   // Remove a threshold range
   const removeThresholdRange = (index) => {
-    const updatedThresholds = thresholds.filter((_, i) => i !== index);
-    setThresholds(updatedThresholds);
+    setThresholds((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Update a specific threshold
-  const updateThreshold = (index, field, value) => {
-    const updatedThresholds = [...thresholds];
-    updatedThresholds[index] = {
-      ...updatedThresholds[index],
-      [field]: value,
-    };
+  // Update a specific threshold field
+  const updateThreshold = useCallback(
+    (index, field, value) => {
+      setThresholds((prev) => {
+        const newThresholds = [...prev];
 
-    // Update color when severity changes
-    if (field === "severityLevel") {
-      const severityConfig = severityLevels.find((s) => s.value === value);
-      if (severityConfig) {
-        updatedThresholds[index].colorCode = severityConfig.color;
-      }
-    }
+        // Create a new object for the specific threshold to avoid mutation
+        newThresholds[index] = {
+          ...newThresholds[index],
+          [field]: value,
+        };
 
-    setThresholds(updatedThresholds);
-  };
+        // Update color when severity changes
+        if (field === "severityLevel") {
+          const severityConfig = severityLevels.find((s) => s.value === value);
+          if (severityConfig) {
+            newThresholds[index].colorCode = severityConfig.color;
+          }
+        }
+
+        // Format decimal values for min/max
+        if (field === "minValue" || field === "maxValue") {
+          if (value !== null && value !== "") {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+              // Round to 2 decimal places
+              newThresholds[index][field] = Math.round(numValue * 100) / 100;
+            }
+          } else {
+            newThresholds[index][field] = null;
+          }
+        }
+
+        return newThresholds;
+      });
+    },
+    [severityLevels]
+  );
 
   // Save thresholds
   const saveThresholds = async () => {
-    setIsLoading(true);
+    setIsSaving(true);
     try {
       // Validate thresholds
       const validationErrors = validateThresholds();
       if (validationErrors.length > 0) {
         onError(`Validation errors: ${validationErrors.join(", ")}`);
-        setIsLoading(false);
+        setIsSaving(false);
         return;
       }
 
@@ -145,31 +163,38 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
       console.error(`Error saving thresholds for ${sensorType}:`, error);
       onError(`Failed to save thresholds for ${sensorType}`);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  // Reset to defaults
+  // Reset to defaults and save immediately
   const resetToDefaults = async () => {
-    setIsLoading(true);
+    setIsSaving(true);
     try {
       const defaults = await getDefaultThresholds(sensorType);
-      setThresholds(
-        defaults.map((threshold) => ({
-          ...threshold,
-          farmId,
-          sensorType,
-          notificationEnabled: true,
-        }))
+      const defaultThresholds = defaults.map((threshold) => ({
+        ...threshold,
+        farmId,
+        sensorType,
+        notificationEnabled: true,
+      }));
+
+      // Save defaults immediately to backend
+      await upsertSensorThresholds(farmId, sensorType, defaultThresholds);
+
+      // Update local state
+      setThresholds(defaultThresholds);
+      onSuccess(
+        `Default thresholds for ${sensorType} have been applied and saved.`
       );
     } catch (error) {
       console.error(
-        `Error loading default thresholds for ${sensorType}:`,
+        `Error resetting to default thresholds for ${sensorType}:`,
         error
       );
-      onError(`Failed to load default thresholds for ${sensorType}`);
+      onError(`Failed to reset to default thresholds for ${sensorType}`);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -206,75 +231,100 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
     return units[type] || "";
   };
 
+  // Format number input to 2 decimal places
+  const formatDecimalInput = (value) => {
+    if (value === null || value === "") return "";
+    const num = parseFloat(value);
+    return isNaN(num) ? "" : num.toFixed(2);
+  };
+
+  // Handle numeric input change with decimal formatting
+  const handleNumericInputChange = (index, field, inputValue) => {
+    if (inputValue === "") {
+      updateThreshold(index, field, null);
+      return;
+    }
+
+    // Allow input during typing but validate on blur
+    const numValue = parseFloat(inputValue);
+    if (!isNaN(numValue)) {
+      updateThreshold(index, field, numValue);
+    }
+  };
+
   const unit = getSensorUnit(sensorType);
 
+  if (isLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Accordion
-      expanded={expanded}
-      onChange={() => setExpanded(!expanded)}
-      sx={{ mb: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
-    >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {sensorType} Thresholds
+    <Box sx={{ p: 3 }}>
+      {/* Action Buttons */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={saveThresholds}
+          disabled={isSaving}
+          sx={{ textTransform: "none" }}
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<RestoreIcon />}
+          onClick={resetToDefaults}
+          disabled={isSaving}
+          sx={{ textTransform: "none" }}
+        >
+          {isSaving ? "Resetting..." : "Reset to Default"}
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={addThresholdRange}
+          disabled={isSaving}
+          sx={{ textTransform: "none" }}
+        >
+          Add Range
+        </Button>
+      </Box>
+
+      {/* Info Chip */}
+      <Box sx={{ mb: 3 }}>
+        <Chip
+          label={`${thresholds.length} threshold ranges`}
+          size="small"
+          sx={{ mr: 1 }}
+        />
+        {unit && (
+          <Chip label={`Unit: ${unit}`} size="small" variant="outlined" />
+        )}
+      </Box>
+
+      {/* Threshold Ranges */}
+      {thresholds.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 4 }}>
+          <Typography color="text.secondary">
+            No threshold ranges configured. Click "Add Range" to create one.
           </Typography>
-          <Chip
-            label={`${thresholds.length} ranges`}
-            size="small"
-            sx={{ ml: 2 }}
-          />
-          {unit && (
-            <Chip label={unit} size="small" variant="outlined" sx={{ ml: 1 }} />
-          )}
         </Box>
-      </AccordionSummary>
-
-      <AccordionDetails>
-        <Box sx={{ width: "100%" }}>
-          {/* Action Buttons */}
-          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={saveThresholds}
-              disabled={isLoading}
-              sx={{ textTransform: "none" }}
-            >
-              Save Changes
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<RestoreIcon />}
-              onClick={resetToDefaults}
-              disabled={isLoading}
-              sx={{ textTransform: "none" }}
-            >
-              Reset to Default
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={addThresholdRange}
-              disabled={isLoading}
-              sx={{ textTransform: "none" }}
-            >
-              Add Range
-            </Button>
-          </Box>
-
-          {/* Threshold Ranges */}
-          {thresholds.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 4 }}>
-              <Typography color="text.secondary">
-                No threshold ranges configured. Click "Add Range" to create one.
-              </Typography>
-            </Box>
-          ) : (
-            thresholds.map((threshold, index) => (
+      ) : (
+        <Grid container spacing={2}>
+          {thresholds.map((threshold, index) => (
+            <Grid item xs={12} key={index}>
               <Card
-                key={index}
-                sx={{ mb: 2, border: `2px solid ${threshold.colorCode}20` }}
+                sx={{
+                  border: `2px solid ${threshold.colorCode}20`,
+                  "&:hover": {
+                    border: `2px solid ${threshold.colorCode}40`,
+                  },
+                }}
               >
                 <CardContent>
                   <Box
@@ -291,98 +341,142 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
                     <IconButton
                       color="error"
                       onClick={() => removeThresholdRange(index)}
-                      disabled={isLoading}
+                      disabled={isSaving}
                       size="small"
                     >
                       <DeleteIcon />
                     </IconButton>
                   </Box>
 
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(200px, 1fr))",
-                      gap: 2,
-                    }}
-                  >
+                  <Grid container spacing={2}>
                     {/* Severity Selection */}
-                    <FormControl fullWidth>
-                      <InputLabel>Severity</InputLabel>
-                      <Select
-                        value={threshold.severityLevel}
+                    <Grid item xs={12} md={3}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Severity</InputLabel>
+                        <Select
+                          value={threshold.severityLevel}
+                          onChange={(e) =>
+                            updateThreshold(
+                              index,
+                              "severityLevel",
+                              e.target.value
+                            )
+                          }
+                          label="Severity"
+                          disabled={isSaving}
+                        >
+                          {severityLevels.map((severity) => (
+                            <MenuItem
+                              key={severity.value}
+                              value={severity.value}
+                            >
+                              <Box
+                                sx={{ display: "flex", alignItems: "center" }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 16,
+                                    height: 16,
+                                    backgroundColor: severity.color,
+                                    borderRadius: "50%",
+                                    mr: 1,
+                                  }}
+                                />
+                                {severity.label}
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {/* Min Value */}
+                    <Grid item xs={12} md={3}>
+                      <TextField
+                        label={`Min Value ${unit ? `(${unit})` : ""}`}
+                        type="number"
+                        value={
+                          threshold.minValue !== null ? threshold.minValue : ""
+                        }
                         onChange={(e) =>
-                          updateThreshold(
+                          handleNumericInputChange(
                             index,
-                            "severityLevel",
+                            "minValue",
                             e.target.value
                           )
                         }
-                        label="Severity"
-                        disabled={isLoading}
-                      >
-                        {severityLevels.map((severity) => (
-                          <MenuItem key={severity.value} value={severity.value}>
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              <Box
-                                sx={{
-                                  width: 16,
-                                  height: 16,
-                                  backgroundColor: severity.color,
-                                  borderRadius: "50%",
-                                  mr: 1,
-                                }}
-                              />
-                              {severity.label}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    {/* Min Value */}
-                    <TextField
-                      label={`Min Value ${unit ? `(${unit})` : ""}`}
-                      type="number"
-                      value={threshold.minValue || ""}
-                      onChange={(e) =>
-                        updateThreshold(
-                          index,
-                          "minValue",
-                          e.target.value ? parseFloat(e.target.value) : null
-                        )
-                      }
-                      disabled={isLoading}
-                      placeholder="No minimum"
-                    />
+                        onBlur={(e) => {
+                          // Format to 2 decimal places on blur
+                          const value = e.target.value;
+                          if (value !== "" && !isNaN(parseFloat(value))) {
+                            updateThreshold(
+                              index,
+                              "minValue",
+                              parseFloat(value)
+                            );
+                          }
+                        }}
+                        disabled={isSaving}
+                        placeholder="No minimum"
+                        size="small"
+                        fullWidth
+                        inputProps={{
+                          step: "0.01",
+                        }}
+                      />
+                    </Grid>
 
                     {/* Max Value */}
-                    <TextField
-                      label={`Max Value ${unit ? `(${unit})` : ""}`}
-                      type="number"
-                      value={threshold.maxValue || ""}
-                      onChange={(e) =>
-                        updateThreshold(
-                          index,
-                          "maxValue",
-                          e.target.value ? parseFloat(e.target.value) : null
-                        )
-                      }
-                      disabled={isLoading}
-                      placeholder="No maximum"
-                    />
+                    <Grid item xs={12} md={3}>
+                      <TextField
+                        label={`Max Value ${unit ? `(${unit})` : ""}`}
+                        type="number"
+                        value={
+                          threshold.maxValue !== null ? threshold.maxValue : ""
+                        }
+                        onChange={(e) =>
+                          handleNumericInputChange(
+                            index,
+                            "maxValue",
+                            e.target.value
+                          )
+                        }
+                        onBlur={(e) => {
+                          // Format to 2 decimal places on blur
+                          const value = e.target.value;
+                          if (value !== "" && !isNaN(parseFloat(value))) {
+                            updateThreshold(
+                              index,
+                              "maxValue",
+                              parseFloat(value)
+                            );
+                          }
+                        }}
+                        disabled={isSaving}
+                        placeholder="No maximum"
+                        size="small"
+                        fullWidth
+                        inputProps={{
+                          step: "0.01",
+                        }}
+                      />
+                    </Grid>
 
                     {/* Label */}
-                    <TextField
-                      label="Label"
-                      value={threshold.label || ""}
-                      onChange={(e) =>
-                        updateThreshold(index, "label", e.target.value)
-                      }
-                      disabled={isLoading}
-                      placeholder="Range description"
-                    />
-                  </Box>
+                    <Grid item xs={12} md={3}>
+                      <TextField
+                        label="Label"
+                        value={threshold.label || ""}
+                        onChange={(e) =>
+                          updateThreshold(index, "label", e.target.value)
+                        }
+                        disabled={isSaving}
+                        placeholder="Range description"
+                        size="small"
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
 
                   {/* Additional Options */}
                   <Box sx={{ mt: 2 }}>
@@ -397,7 +491,8 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
                               e.target.checked
                             )
                           }
-                          disabled={isLoading}
+                          disabled={isSaving}
+                          size="small"
                         />
                       }
                       label="Enable notifications for this range"
@@ -405,11 +500,11 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
                   </Box>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </Box>
-      </AccordionDetails>
-    </Accordion>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Box>
   );
 };
 
