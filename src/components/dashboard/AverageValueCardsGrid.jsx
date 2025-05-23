@@ -302,7 +302,7 @@ const AverageValueCardsGrid = ({
       return sensors;
     }
     // Show only first 4 sensors for single row display
-    return sensors.slice(0, 4);
+    return sensors.slice(0, 6);
   };
 
   const displayedSensors = getDisplayedSensors();

@@ -6,7 +6,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
-  Grid,
   LinearProgress,
   Alert,
   useTheme,
@@ -18,7 +17,6 @@ import {
   ListItemText,
   useMediaQuery,
   ListItemButton,
-  Avatar,
   Container,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -287,7 +285,7 @@ const DashboardContent = () => {
               width: "100%",
               flexDirection: { xs: "column", md: "row" },
               gap: 3,
-              height: { md: "calc(100vh - 250px)" },
+              height: { md: "calc(100vh - 180px)" }, // Adjusted height calculation
             }}
           >
             {/* Left sidebar with cards - UPDATED: Removed NotificationsCard */}
@@ -309,14 +307,23 @@ const DashboardContent = () => {
                 isLoading={isLoading}
               />
 
-              {/* Active Sensors Card - UPDATED: Now the last element */}
-              <ActiveSensorsCard
-                averages={dashboardData?.averages}
-                visibleSensors={visibleSensors}
-                onToggleSensor={handleToggleSensor}
-                showAllGauges={showAllGauges}
-                onToggleShowAllGauges={handleToggleShowAllGauges}
-              />
+              {/* Active Sensors Card - Make it fill remaining space */}
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                }}
+              >
+                <ActiveSensorsCard
+                  averages={dashboardData?.averages}
+                  visibleSensors={visibleSensors}
+                  onToggleSensor={handleToggleSensor}
+                  showAllGauges={showAllGauges}
+                  onToggleShowAllGauges={handleToggleShowAllGauges}
+                />
+              </Box>
             </Box>
 
             {/* Container for sensor values and charts */}
@@ -328,19 +335,24 @@ const DashboardContent = () => {
                 display: "flex",
                 flexDirection: "column",
                 height: { md: "100%" },
-                overflow: "hidden",
+                overflow: "hidden", // Prevent overflow
               }}
             >
-              {/* Sensor Values Cards - UPDATED: Pass showAllGauges state */}
+              {/* Sensor Values Cards */}
               <AverageValueCardsGrid
                 sensorData={dashboardData?.averages}
                 visibleSensors={visibleSensors}
                 showAllGauges={showAllGauges}
                 onSensorConfigClick={handleSensorConfigClick}
               />
+
+              {/* Charts Section - Make it fill remaining space */}
               <Box
                 sx={{
                   flex: 1,
+                  display: "flex", // Add this
+                  flexDirection: "column", // Add this
+                  minHeight: 0, // Critical for flex child to respect parent boundaries
                   overflowY: "auto",
                   overflowX: "hidden",
                   // Custom scrollbar styling
@@ -366,13 +378,13 @@ const DashboardContent = () => {
                   pr: 1,
                 }}
               >
-                {/* Charts Section */}
                 <SensorChartsSection
                   chartData={chartData}
                   onRefresh={handleRefresh}
                   isLoading={isLoading}
                   visibleSensors={visibleSensors}
                   timeRange={timeRange}
+                  sx={{ flex: 1 }} // Make it fill the container
                 />
               </Box>
             </Box>
@@ -573,13 +585,25 @@ const DashboardPage = () => {
           p: { xs: 2, sm: 3 },
           backgroundColor: theme.palette.grey[50],
           minHeight: "100vh",
+          height: "100vh", // Add explicit height
           width: "100%",
           maxWidth: "100%",
           overflowX: "hidden",
+          display: "flex", // Add flex display
+          flexDirection: "column", // Stack children vertically
         }}
       >
         <Toolbar />
-        <Container maxWidth="xl" disableGutters>
+        <Container
+          maxWidth="xl"
+          disableGutters
+          sx={{
+            flex: 1, // Make it fill available space
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // Prevent overflow
+          }}
+        >
           <Routes>
             <Route path="" element={<DashboardContent />} />
             <Route path="farms/*" element={<FarmListPage />} />
