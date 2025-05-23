@@ -343,110 +343,6 @@ const SensorForm = ({
         </Box>
       </Box>
 
-      {/* Min/Max Values in a row */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            component="label"
-            htmlFor="sensor-minValue"
-            sx={{
-              color: theme.palette.primary.main,
-              display: "block",
-              mb: 1,
-              fontWeight: 500,
-            }}
-          >
-            Minimum Value
-          </Typography>
-          <TextField
-            fullWidth
-            id="sensor-minValue"
-            name="minValue"
-            type="number"
-            value={formData.minValue}
-            onChange={handleChange}
-            error={!!errors.minValue}
-            helperText={errors.minValue}
-            disabled={isLoading}
-            InputProps={{
-              endAdornment: formData.unit ? (
-                <InputAdornment position="end">{formData.unit}</InputAdornment>
-              ) : null,
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 1,
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: 2,
-                },
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: errors.minValue
-                  ? theme.palette.error.main
-                  : "#e0e0e0",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: errors.minValue
-                  ? theme.palette.error.main
-                  : theme.palette.primary.light,
-              },
-            }}
-            variant="outlined"
-          />
-        </Box>
-
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            component="label"
-            htmlFor="sensor-maxValue"
-            sx={{
-              color: theme.palette.primary.main,
-              display: "block",
-              mb: 1,
-              fontWeight: 500,
-            }}
-          >
-            Maximum Value
-          </Typography>
-          <TextField
-            fullWidth
-            id="sensor-maxValue"
-            name="maxValue"
-            type="number"
-            value={formData.maxValue}
-            onChange={handleChange}
-            error={!!errors.maxValue}
-            helperText={errors.maxValue}
-            disabled={isLoading}
-            InputProps={{
-              endAdornment: formData.unit ? (
-                <InputAdornment position="end">{formData.unit}</InputAdornment>
-              ) : null,
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 1,
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: 2,
-                },
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: errors.maxValue
-                  ? theme.palette.error.main
-                  : "#e0e0e0",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: errors.maxValue
-                  ? theme.palette.error.main
-                  : theme.palette.primary.light,
-              },
-            }}
-            variant="outlined"
-          />
-        </Box>
-      </Box>
 
       {/* Is Active Switch */}
       <Box sx={{ mb: 4 }}>
@@ -515,8 +411,8 @@ const SensorForm = ({
           {isLoading
             ? "Saving..."
             : isEdit
-            ? "Update Sensor"
-            : "Create Sensor"}
+              ? "Update Sensor"
+              : "Create Sensor"}
         </Button>
       </Box>
     </Box>

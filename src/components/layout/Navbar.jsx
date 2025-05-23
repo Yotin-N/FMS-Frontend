@@ -1,6 +1,6 @@
 // src/components/layout/Navbar.jsx
 import { useState } from "react";
-import { NavLink, Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar,
   Box,
@@ -24,25 +24,33 @@ import {
   Dashboard as DashboardIcon,
   Agriculture as AgricultureIcon,
   Devices as DevicesIcon,
-  Person as PersonIcon,
+  Person as PersonIcon, // Used for Profile link
   Logout as LogoutIcon,
   Settings as SettingsIcon,
-  Notifications as NotificationsIcon,
+  // Notifications as NotificationsIcon, // This was imported but not used
   Close as CloseIcon,
+  Menu as MenuIcon, // Added for hamburger menu
+  Sensors as SensorsIcon, // Added
+  People as PeopleIcon,    // Added for User Management
 } from "@mui/icons-material";
 import useAuth from "../../hooks/useAuth";
 
+// Navbar component no longer needs toggleDrawer/open props from DashboardPage for this implementation
+// if it's managing its own mobile drawer.
 const Navbar = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation(); // Added to determine active route
   const { isAuthenticated, user, logout } = useAuth();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // State
+  // State for profile menu
   const [anchorEl, setAnchorEl] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
+
+  // State for Navbar's own mobile drawer
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Handle profile menu clicks
   const handleProfileMenuOpen = (event) => {
@@ -54,20 +62,79 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    handleMenuClose();
+    if (mobileDrawerOpen) {
+      closeMobileDrawer(); // Close mobile drawer if open
+    }
+    handleMenuClose(); // Close profile menu if open
     logout();
   };
 
-  // Handle drawer
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
+  // Handle Navbar's mobile drawer
+  const toggleMobileDrawer = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
   };
 
-  const closeDrawer = () => {
-    setDrawerOpen(false);
+  const closeMobileDrawer = () => {
+    setMobileDrawerOpen(false);
   };
 
-  // Render the profile menu
+  // Define menu items for the Navbar's mobile drawer
+  // Paths are absolute, matching the routes in DashboardPage.jsx
+  const drawerMenuItems = [
+    {
+      text: "Dashboard",
+      icon: <DashboardIcon />,
+      path: "/dashboard",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Farm Management",
+      icon: <AgricultureIcon />,
+      path: "/dashboard/farms",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Device Management",
+      icon: <DevicesIcon />,
+      path: "/dashboard/devices",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Sensor",
+      icon: <SensorsIcon />,
+      path: "/dashboard/sensors",
+      roles: ["ADMIN", "USER"],
+    },
+    {
+      text: "Settings",
+      icon: <SettingsIcon />,
+      path: "/dashboard/settings",
+      roles: ["ADMIN"],
+    },
+    {
+      text: "User Management",
+      icon: <PeopleIcon />, // Consistent with DashboardPage sidebar
+      path: "/dashboard/users",
+      roles: ["ADMIN"],
+    },
+  ];
+
+  const filteredDrawerMenuItems = drawerMenuItems.filter((item) => {
+    if (!isAuthenticated || !user) return false;
+    if (!item.roles) return true;
+    return item.roles.includes(user.role);
+  });
+
+  // Helper to determine if a nav item is active
+  const isActiveNavItem = (itemPath) => {
+    if (itemPath === "/dashboard") {
+      // Active if path is exactly /dashboard or /dashboard?query...
+      return location.pathname === "/dashboard" || location.pathname.startsWith("/dashboard?");
+    }
+    // Active if current path starts with itemPath (e.g., /dashboard/farms will match /dashboard/farms/create)
+    return location.pathname.startsWith(itemPath);
+  };
+
   const renderProfileMenu = (
     <Menu
       anchorEl={anchorEl}
@@ -112,13 +179,11 @@ const Navbar = () => {
           {user?.email || ""}
         </Typography>
       </Box>
-
       <Divider />
-
       <MenuItem
         onClick={() => {
           handleMenuClose();
-          navigate("/profile");
+          navigate("/profile"); // Assuming /profile is a valid top-level route
         }}
         sx={{ py: 1.5 }}
       >
@@ -127,20 +192,20 @@ const Navbar = () => {
         </ListItemIcon>
         <ListItemText primary="Profile" />
       </MenuItem>
-
-      <MenuItem
-        onClick={() => {
-          handleMenuClose();
-          navigate("/settings");
-        }}
-        sx={{ py: 1.5 }}
-      >
-        <ListItemIcon>
-          <SettingsIcon fontSize="small" />
-        </ListItemIcon>
-        <ListItemText primary="Settings" />
-      </MenuItem>
-
+      {isAuthenticated && user?.role === "ADMIN" && (
+        <MenuItem
+          onClick={() => {
+            handleMenuClose();
+            navigate("/dashboard/settings"); // Corrected path
+          }}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Settings" />
+        </MenuItem>
+      )}
       {isAuthenticated && user?.role === "ADMIN" && (
         <MenuItem
           onClick={() => {
@@ -150,14 +215,12 @@ const Navbar = () => {
           sx={{ py: 1.5 }}
         >
           <ListItemIcon>
-            <PersonIcon fontSize="small" />
+            <PeopleIcon fontSize="small" /> {/* Changed to PeopleIcon for consistency */}
           </ListItemIcon>
           <ListItemText primary="User Management" />
         </MenuItem>
       )}
-
       <Divider />
-
       <MenuItem onClick={handleLogout} sx={{ py: 1.5 }}>
         <ListItemIcon>
           <LogoutIcon fontSize="small" color="error" />
@@ -170,12 +233,11 @@ const Navbar = () => {
     </Menu>
   );
 
-  // Render mobile drawer
   const renderMobileDrawer = (
     <Drawer
       anchor="left"
-      open={drawerOpen}
-      onClose={toggleDrawer}
+      open={mobileDrawerOpen}
+      onClose={toggleMobileDrawer} // Use Navbar's own toggle
       sx={{
         "& .MuiDrawer-paper": {
           width: 280,
@@ -199,18 +261,16 @@ const Navbar = () => {
           </Typography>
         </Box>
         <IconButton
-          onClick={toggleDrawer}
+          onClick={toggleMobileDrawer} // Use Navbar's own toggle
           edge="end"
           sx={{ color: theme.palette.text.secondary }}
         >
           <CloseIcon />
         </IconButton>
       </Box>
-
       <Divider />
-
-      {isAuthenticated && (
-        <Box sx={{ p: 2 }}>
+      {isAuthenticated && user && (
+        <Box sx={{ p: 2, pb: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
             <Avatar
               sx={{
@@ -220,73 +280,81 @@ const Navbar = () => {
                 mr: 1.5,
               }}
             >
-              {user?.firstName?.charAt(0).toUpperCase() || "U"}
+              {user.firstName?.charAt(0).toUpperCase() || "U"}
             </Avatar>
             <Box>
               <Typography variant="subtitle1" fontWeight={600}>
-                {user?.firstName || "User"} {user?.lastName || ""}
+                {user.firstName || "User"} {user.lastName || ""}
               </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
                 className="text-ellipsis"
               >
-                {user?.email || ""}
+                {user.email || ""}
               </Typography>
             </Box>
           </Box>
         </Box>
       )}
 
-      {isAuthenticated && user?.role === "ADMIN" && (
-        <>
-          <List sx={{ px: 1 }}>
-            <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                component={RouterLink}
-                to="/dashboard/users"
-                selected={location.pathname.startsWith("/dashboard/users")}
-                onClick={closeDrawer}
-                sx={{
-                  borderRadius: 1,
-                  backgroundColor: location.pathname.startsWith(
-                    "/dashboard/users"
-                  )
-                    ? theme.palette.secondary.light
-                    : "transparent",
-                  color: location.pathname.startsWith("/dashboard/users")
-                    ? theme.palette.primary.main
-                    : "inherit",
-                  "&:hover": {
-                    backgroundColor: theme.palette.secondary.light,
-                  },
-                }}
-              >
-                <ListItemIcon
+      {/* Dynamic Menu List */}
+      {isAuthenticated && filteredDrawerMenuItems.length > 0 && (
+        <List sx={{ px: 1 }}>
+          {filteredDrawerMenuItems.map((item) => {
+            const active = isActiveNavItem(item.path);
+            return (
+              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  component={RouterLink}
+                  to={item.path}
+                  selected={active}
+                  onClick={closeMobileDrawer} // Close this drawer on click
                   sx={{
-                    color: location.pathname.startsWith("/dashboard/users")
+                    borderRadius: 1,
+                    backgroundColor: active
+                      ? theme.palette.action.selected //theme.palette.secondary.light
+                      : "transparent",
+                    color: active
                       ? theme.palette.primary.main
                       : "inherit",
-                    minWidth: 40,
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                    "&.Mui-selected": { // Ensure selected style overrides hover if needed
+                      backgroundColor: theme.palette.action.selected,
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.selectedHover || theme.palette.action.hover,
+                      }
+                    }
                   }}
                 >
-                  <PersonIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary="User Management"
-                  primaryTypographyProps={{
-                    fontWeight: location.pathname.startsWith("/dashboard/users")
-                      ? 600
-                      : 500,
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          </List>
-          <Divider sx={{ my: 1 }} />
-        </>
+                  <ListItemIcon
+                    sx={{
+                      color: active
+                        ? theme.palette.primary.main
+                        : "inherit",
+                      minWidth: 40,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.text}
+                    primaryTypographyProps={{
+                      fontWeight: active ? 600 : 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
       )}
 
+      {isAuthenticated && filteredDrawerMenuItems.length > 0 && <Divider sx={{ my: 1 }} />}
+
+      {/* Logout Link */}
       {isAuthenticated && (
         <List sx={{ px: 1 }}>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
@@ -305,7 +373,6 @@ const Navbar = () => {
     </Drawer>
   );
 
-  // If not authenticated, don't render the navbar
   if (!isAuthenticated) {
     return null;
   }
@@ -324,35 +391,45 @@ const Navbar = () => {
       }}
     >
       <Toolbar>
-        {/* Left Section - Logo */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <AgricultureIcon
-              sx={{
-                color: theme.palette.primary.main,
-                mr: 1,
-                fontSize: isMobile ? 24 : 28,
-              }}
-            />
-            <Typography
-              variant={isMobile ? "subtitle1" : "h6"}
-              component={RouterLink}
-              to={isAuthenticated ? "/dashboard" : "/"}
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.primary.main,
-                textDecoration: "none",
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              Farm Management
-            </Typography>
-          </Box>
+        {/* Hamburger Menu Icon - visible only on mobile */}
+        {isMobile && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={toggleMobileDrawer} // Use Navbar's own toggle
+            sx={{ mr: 1 }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
+
+        {/* Left Section - Logo. flexGrow: 1 makes it take available space */}
+        <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+          <AgricultureIcon
+            sx={{
+              color: theme.palette.primary.main,
+              mr: 1,
+              fontSize: isMobile ? 24 : 28,
+            }}
+          />
+          <Typography
+            variant={isMobile ? "subtitle1" : "h6"}
+            component={RouterLink}
+            to={isAuthenticated ? "/dashboard" : "/"}
+            sx={{
+              fontWeight: 600,
+              color: theme.palette.primary.main,
+              textDecoration: "none",
+              display: { xs: "none", sm: "block" }, // Show text on sm screens and up
+            }}
+          >
+            Farm Management
+          </Typography>
         </Box>
 
-        {/* Right Section - User Profile */}
-        <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-          {/* User Profile Avatar */}
+        {/* Right Section - User Profile. ml: "auto" is not needed if the logo box has flexGrow:1 */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           <IconButton
             onClick={handleProfileMenuOpen}
             size="small"

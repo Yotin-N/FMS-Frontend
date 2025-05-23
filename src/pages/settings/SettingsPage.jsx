@@ -204,41 +204,42 @@ const SettingsPage = () => {
       </Typography>
 
       {/* Farm Selection - Fixed width issue */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <FormControl sx={{ maxWidth: 300 }}>
-          <InputLabel id="farm-select-label">Select Farm</InputLabel>
-          <Select
-            labelId="farm-select-label"
-            value={selectedFarmId}
-            onChange={handleFarmChange}
-            label="Select Farm"
-            displayEmpty
-            renderValue={(selected) => {
-              if (!selected || selected.length === 0) {
-                return null;
-              }
-              const farm = farms.find((f) => f.id === selected);
-              return farm ? farm.name : "";
-            }}
-            sx={{
-              width: "100%",
-              maxWidth: { xs: "100%", sm: "400px" },
-            }}
-          >
-            {farms.length === 0 ? (
-              <MenuItem disabled value="">
-                No farms available
+
+      <FormControl sx={{ maxWidth: 300 }}>
+        <InputLabel id="farm-select-label">Select Farm</InputLabel>
+        <Select
+          labelId="farm-select-label"
+          value={selectedFarmId}
+          onChange={handleFarmChange}
+          label="Select Farm"
+          displayEmpty
+          renderValue={(selected) => {
+            if (!selected || selected.length === 0) {
+              return null;
+            }
+            const farm = farms.find((f) => f.id === selected);
+            return farm ? farm.name : "";
+          }}
+          sx={{
+            width: "100%",
+            maxWidth: { xs: "100%", sm: "600px" },
+            mb: 3,
+          }}
+        >
+          {farms.length === 0 ? (
+            <MenuItem disabled value="">
+              No farms available
+            </MenuItem>
+          ) : (
+            farms.map((farm) => (
+              <MenuItem key={farm.id} value={farm.id}>
+                {farm.name}
               </MenuItem>
-            ) : (
-              farms.map((farm) => (
-                <MenuItem key={farm.id} value={farm.id}>
-                  {farm.name}
-                </MenuItem>
-              ))
-            )}
-          </Select>
-        </FormControl>
-      </Paper>
+            ))
+          )}
+        </Select>
+      </FormControl>
+
 
       {/* Loading State */}
       {isLoading && <LinearProgress sx={{ mb: 3 }} />}
@@ -428,8 +429,7 @@ const SettingsPage = () => {
             <Box>
               <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
                 {editingSensorType &&
-                  `Configure ${
-                    getSensorTypeDetails(editingSensorType).name
+                  `Configure ${getSensorTypeDetails(editingSensorType).name
                   } Thresholds`}
               </Typography>
               {editingSensorType && (

@@ -469,7 +469,7 @@ const DashboardPage = () => {
       text: "Settings",
       icon: <SettingsIcon />,
       path: "/settings",
-      roles: ["ADMIN", "USER"],
+      roles: ["ADMIN"],
     },
     {
       text: "User Management",
@@ -613,10 +613,11 @@ const DashboardPage = () => {
               path="sensors/:id/readings"
               element={<SensorReadingsPage />}
             />
-            <Route path="settings/*" element={<SettingsPage />} />
+
 
             {isAuthenticated && user?.role === "ADMIN" && (
               <>
+                <Route path="settings/*" element={<SettingsPage />} />
                 <Route path="users/*" element={<UserListPage />} />
                 <Route path="users/create" element={<CreateUserPage />} />
                 <Route path="users/edit/:id" element={<EditUserPage />} />

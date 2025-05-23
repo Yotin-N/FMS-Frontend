@@ -159,9 +159,8 @@ const AverageValueCardsGrid = ({
               width: 32,
               height: 32,
               backgroundColor: "rgba(255,255,255,0.95)",
-              border: `2px solid ${
-                severityColor || theme.palette.warning.main
-              }`,
+              border: `2px solid ${severityColor || theme.palette.warning.main
+                }`,
               borderRadius: "50%",
               color: severityColor || theme.palette.warning.main,
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
@@ -204,9 +203,8 @@ const AverageValueCardsGrid = ({
               strokeDasharray={`${gaugeCircumference} ${circumference}`}
               strokeDashoffset={0}
               strokeLinecap="round"
-              transform={`rotate(${startAngle} ${circleSize / 2} ${
-                circleSize / 2
-              })`}
+              transform={`rotate(${startAngle} ${circleSize / 2} ${circleSize / 2
+                })`}
             />
           </svg>
 
@@ -226,9 +224,8 @@ const AverageValueCardsGrid = ({
               strokeDasharray={`${gaugeCircumference} ${circumference}`}
               strokeDashoffset={dashOffset}
               strokeLinecap="round"
-              transform={`rotate(${startAngle} ${circleSize / 2} ${
-                circleSize / 2
-              })`}
+              transform={`rotate(${startAngle} ${circleSize / 2} ${circleSize / 2
+                })`}
               style={{
                 transition:
                   "stroke-dashoffset 1s ease-in-out, stroke 0.3s ease",
@@ -292,17 +289,17 @@ const AverageValueCardsGrid = ({
 
   const sensors = sensorData
     ? Object.entries(sensorData).filter(([type]) =>
-        visibleSensors.includes(type)
-      )
+      visibleSensors.includes(type)
+    )
     : [];
 
-  // Control how many gauges to show based on showAllGauges state
+
   const getDisplayedSensors = () => {
     if (showAllGauges) {
       return sensors;
     }
-    // Show only first 4 sensors for single row display
-    return sensors.slice(0, 6);
+
+    return sensors.slice(0, 7);
   };
 
   const displayedSensors = getDisplayedSensors();
