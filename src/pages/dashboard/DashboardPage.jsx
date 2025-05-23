@@ -287,6 +287,7 @@ const DashboardContent = () => {
               width: "100%",
               flexDirection: { xs: "column", md: "row" },
               gap: 3,
+              height: { md: "calc(100vh - 250px)" },
             }}
           >
             {/* Left sidebar with cards - UPDATED: Removed NotificationsCard */}
@@ -298,6 +299,7 @@ const DashboardContent = () => {
                 order: { xs: 2, md: 1 },
                 display: "flex",
                 flexDirection: "column",
+                height: { md: "100%" },
               }}
             >
               {/* Date Time Card */}
@@ -323,6 +325,10 @@ const DashboardContent = () => {
                 flex: 1,
                 width: { xs: "100%", md: "75%" },
                 order: { xs: 1, md: 2 },
+                display: "flex",
+                flexDirection: "column",
+                height: { md: "100%" },
+                overflow: "hidden",
               }}
             >
               {/* Sensor Values Cards - UPDATED: Pass showAllGauges state */}
@@ -332,14 +338,43 @@ const DashboardContent = () => {
                 showAllGauges={showAllGauges}
                 onSensorConfigClick={handleSensorConfigClick}
               />
-
-              {/* Charts Section */}
-              <SensorChartsSection
-                chartData={chartData}
-                onRefresh={handleRefresh}
-                isLoading={isLoading}
-                visibleSensors={visibleSensors}
-              />
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  // Custom scrollbar styling
+                  scrollbarWidth: "thin",
+                  scrollbarColor: `${theme.palette.grey[400]} ${theme.palette.grey[100]}`,
+                  "&::-webkit-scrollbar": {
+                    width: "8px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    background: theme.palette.grey[100],
+                    borderRadius: "4px",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: theme.palette.grey[400],
+                    borderRadius: "4px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: theme.palette.grey[500],
+                  },
+                  // Smooth scrolling
+                  scrollBehavior: "smooth",
+                  // Add padding for better visual spacing
+                  pr: 1,
+                }}
+              >
+                {/* Charts Section */}
+                <SensorChartsSection
+                  chartData={chartData}
+                  onRefresh={handleRefresh}
+                  isLoading={isLoading}
+                  visibleSensors={visibleSensors}
+                  timeRange={timeRange}
+                />
+              </Box>
             </Box>
           </Box>
         </Box>

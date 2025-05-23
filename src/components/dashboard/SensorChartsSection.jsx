@@ -27,6 +27,7 @@ const SensorChartsSection = ({
   onRefresh,
   isLoading,
   visibleSensors,
+  timeRange = "24", // ✅ NEW: Receive timeRange prop for dynamic formatting
 }) => {
   const theme = useTheme();
 
@@ -44,6 +45,96 @@ const SensorChartsSection = ({
     };
     return colorMap[type] || theme.palette.grey[500];
   };
+
+  // ✅ FIX: Dynamic X-axis formatter based on time range
+  const getTimeRangeFormatter = (timeRange) => {
+    const range = parseInt(timeRange);
+
+    if (range <= 24) {
+      // For 24h or less: show time (hours:minutes)
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "HH:mm");
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    } else if (range <= 168) {
+      // For 7 days (168h): show day of week
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "EEE"); // Mon, Tue, Wed
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    } else {
+      // For 30 days or longer: show month and date
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "MMM d");
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    }
+  };
+
+  // ✅ FIX: Enhanced tooltip formatter for different time ranges
+  const getTooltipFormatter = (timeRange) => {
+    const range = parseInt(timeRange);
+
+    if (range <= 24) {
+      // For 24h: show full date and time
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "MMM d, HH:mm");
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    } else if (range <= 168) {
+      // For 7d: show day and date
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "EEE, MMM d");
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    } else {
+      // For 30d+: show full date
+      return (time) => {
+        if (!time) return "";
+        try {
+          const date = new Date(time);
+          return format(date, "MMM d, yyyy");
+        } catch (error) {
+          console.warn("Invalid date format:", time);
+          return "";
+        }
+      };
+    }
+  };
+
+  // Get the formatters for current time range
+  const tickFormatter = getTimeRangeFormatter(timeRange);
+  const tooltipLabelFormatter = getTooltipFormatter(timeRange);
 
   // Function to check if data spans multiple days
   const doesDataSpanMultipleDays = (chartData) => {
@@ -69,30 +160,6 @@ const SensorChartsSection = ({
     // If we have unique dates more than 1, data spans multiple days
     const uniqueDates = [...new Set(allDates)];
     return uniqueDates.length > 1;
-  };
-
-  // Format chart date labels
-  const formatChartDate = (time) => {
-    if (!time) return "";
-    try {
-      const date = new Date(time);
-      return format(date, "MMM d");
-    } catch (error) {
-      console.warn("Invalid date format:", time);
-      return "";
-    }
-  };
-
-  // Format tooltip date
-  const formatTooltipDate = (time) => {
-    if (!time) return "";
-    try {
-      const date = new Date(time);
-      return format(date, "MMM d, yyyy HH:mm");
-    } catch (error) {
-      console.warn("Invalid date format:", time);
-      return "";
-    }
   };
 
   // Process and validate chart data
@@ -168,6 +235,24 @@ const SensorChartsSection = ({
                     ? sensorTypeData.type.toUpperCase()
                     : "UNKNOWN"}{" "}
                   Chart
+                  {/* ✅ NEW: Show time range info */}
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{
+                      ml: 1,
+                      color: "text.secondary",
+                      fontWeight: 400,
+                    }}
+                  >
+                    (
+                    {parseInt(timeRange) <= 24
+                      ? `${timeRange}h`
+                      : parseInt(timeRange) <= 168
+                      ? `${Math.round(parseInt(timeRange) / 24)}d`
+                      : `${Math.round(parseInt(timeRange) / 24)}d`}
+                    )
+                  </Typography>
                 </Typography>
                 <IconButton size="small">
                   <MoreHorizIcon />
@@ -209,7 +294,7 @@ const SensorChartsSection = ({
                       />
                       <XAxis
                         dataKey="time"
-                        tickFormatter={formatChartDate}
+                        tickFormatter={tickFormatter} // ✅ FIX: Use dynamic formatter
                         stroke="#888"
                         axisLine={false}
                         tickLine={false}
@@ -239,7 +324,7 @@ const SensorChartsSection = ({
                           typeof value === "number" ? value.toFixed(2) : "N/A",
                           sensorTypeData.type,
                         ]}
-                        labelFormatter={formatTooltipDate}
+                        labelFormatter={tooltipLabelFormatter} // ✅ FIX: Use dynamic tooltip formatter
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.9)",
                           border: "1px solid #ddd",

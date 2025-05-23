@@ -301,7 +301,7 @@ const AverageValueCardsGrid = ({
     if (showAllGauges) {
       return sensors;
     }
-    // Show only first 3-5 sensors for single row display
+    // Show only first 4 sensors for single row display
     return sensors.slice(0, 4);
   };
 
@@ -363,7 +363,15 @@ const AverageValueCardsGrid = ({
               : data.average;
 
           return (
-            <Grid item xs={6} sm={4} md={3} lg={2} key={type}>
+            <Grid
+              item
+              xs={6} // 2 per row on extra small screens
+              sm={4} // 3 per row on small screens
+              md={2.4} // ✅ FIX: 5 per row on medium screens (15" laptop)
+              lg={2} // 6 per row on large screens
+              xl={1.7} // ✅ FIX: 7 per row on extra large screens (27" monitor)
+              key={type}
+            >
               <GaugeCircle
                 type={type}
                 value={currentValue}

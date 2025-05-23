@@ -7,13 +7,18 @@ import {
   Switch,
   Divider,
   FormControlLabel,
+  Button,
+  Collapse,
 } from "@mui/material";
+import { useState } from "react";
 import ThermostatIcon from "@mui/icons-material/Thermostat";
 import OpacityIcon from "@mui/icons-material/Opacity";
 import WavesIcon from "@mui/icons-material/Waves";
 import ScienceIcon from "@mui/icons-material/Science";
 import BoltIcon from "@mui/icons-material/Bolt";
 import GrainIcon from "@mui/icons-material/Grain";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 const ActiveSensorsCard = ({
   averages,
@@ -23,6 +28,10 @@ const ActiveSensorsCard = ({
   onToggleShowAllGauges,
 }) => {
   const theme = useTheme();
+
+  // ✅ NEW: State to control sensor list expansion
+  const [showAllSensors, setShowAllSensors] = useState(false);
+  const MAX_VISIBLE_SENSORS = 5; // Show only 5 sensors by default
 
   const getSensorTypeColor = (type) => {
     const colorMap = {
@@ -65,16 +74,23 @@ const ActiveSensorsCard = ({
     typeof averages === "object" &&
     Object.keys(averages).length > 0;
 
+  const sensorEntries = hasAverages ? Object.entries(averages) : [];
+  const visibleSensorEntries = showAllSensors
+    ? sensorEntries
+    : sensorEntries.slice(0, MAX_VISIBLE_SENSORS);
+  const hasMoreSensors = sensorEntries.length > MAX_VISIBLE_SENSORS;
+
   return (
     <Card
       sx={{
         mb: 3,
         borderRadius: 2,
         boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-        height: "auto",
-        maxHeight: 450, // Slightly increased to accommodate toggle
+        height: "100%",
+        minHeight: 300,
         display: "flex",
         flexDirection: "column",
+        flexGrow: 1,
       }}
     >
       <CardContent
@@ -143,100 +159,136 @@ const ActiveSensorsCard = ({
           }}
         >
           {hasAverages ? (
-            Object.entries(averages).map(([type, data]) => {
-              const average =
-                typeof data === "object" && data !== null ? data.average : null;
-              const unit =
-                typeof data === "object" && data !== null ? data.unit : "";
-              const displayValue =
-                average !== null && average !== undefined
-                  ? Number(average).toFixed(1)
-                  : "N/A";
-              const sensorColor = getSensorTypeColor(type);
+            <>
+              {/* ✅ NEW: Always visible sensors */}
+              {visibleSensorEntries.map(([type, data]) => {
+                const average =
+                  typeof data === "object" && data !== null
+                    ? data.average
+                    : null;
+                const unit =
+                  typeof data === "object" && data !== null ? data.unit : "";
+                const displayValue =
+                  average !== null && average !== undefined
+                    ? Number(average).toFixed(1)
+                    : "N/A";
+                const sensorColor = getSensorTypeColor(type);
 
-              return (
-                <Box
-                  key={type}
-                  sx={{
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    borderBottom: `1px solid ${theme.palette.grey[100]}`,
-                    transition: "background-color 0.2s",
-                    "&:hover": {
-                      backgroundColor: theme.palette.grey[50],
-                    },
-                  }}
-                >
-                  {/* Left - Icon and sensor info */}
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        backgroundColor: sensorColor,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        mr: 2,
-                        "& svg": {
-                          fontSize: 20,
-                        },
-                      }}
-                    >
-                      {getSensorIcon(type)}
-                    </Box>
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{
-                          fontWeight: 600,
-                          color: theme.palette.text.primary,
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {type}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color:
-                            displayValue === "N/A"
-                              ? theme.palette.text.disabled
-                              : theme.palette.text.secondary,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {displayValue} {unit}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Right - Switch for chart visibility */}
-                  <Switch
-                    checked={visibleSensors.includes(type)}
-                    onChange={() => onToggleSensor(type)}
-                    size="small"
+                return (
+                  <Box
+                    key={type}
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: sensorColor,
-                        "&:hover": {
-                          backgroundColor: `${sensorColor}1A`,
-                        },
+                      p: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      borderBottom: `1px solid ${theme.palette.grey[100]}`,
+                      transition: "background-color 0.2s",
+                      "&:hover": {
+                        backgroundColor: theme.palette.grey[50],
                       },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: sensorColor,
-                          opacity: 0.5,
-                        },
                     }}
-                  />
+                  >
+                    {/* Left - Icon and sensor info */}
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          backgroundColor: sensorColor,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          mr: 2,
+                          "& svg": {
+                            fontSize: 20,
+                          },
+                        }}
+                      >
+                        {getSensorIcon(type)}
+                      </Box>
+                      <Box>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: theme.palette.text.primary,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {type}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color:
+                              displayValue === "N/A"
+                                ? theme.palette.text.disabled
+                                : theme.palette.text.secondary,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {displayValue} {unit}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Right - Switch for chart visibility */}
+                    <Switch
+                      checked={visibleSensors.includes(type)}
+                      onChange={() => onToggleSensor(type)}
+                      size="small"
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: sensorColor,
+                          "&:hover": {
+                            backgroundColor: `${sensorColor}1A`,
+                          },
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                          {
+                            backgroundColor: sensorColor,
+                            opacity: 0.5,
+                          },
+                      }}
+                    />
+                  </Box>
+                );
+              })}
+
+              {/* ✅ NEW: Show More/Less Button */}
+              {hasMoreSensors && (
+                <Box sx={{ p: 2, textAlign: "center" }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setShowAllSensors(!showAllSensors)}
+                    startIcon={
+                      showAllSensors ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                    }
+                    sx={{
+                      color: theme.palette.primary.main,
+                      textTransform: "none",
+                      fontWeight: 500,
+                      fontSize: "0.875rem",
+                      "&:hover": {
+                        backgroundColor: `${theme.palette.primary.main}08`,
+                      },
+                    }}
+                  >
+                    {showAllSensors
+                      ? `Show Less (${
+                          sensorEntries.length - MAX_VISIBLE_SENSORS
+                        } hidden)`
+                      : `Show ${
+                          sensorEntries.length - MAX_VISIBLE_SENSORS
+                        } More`}
+                  </Button>
                 </Box>
-              );
-            })
+              )}
+            </>
           ) : (
             <Box sx={{ p: 3, textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
