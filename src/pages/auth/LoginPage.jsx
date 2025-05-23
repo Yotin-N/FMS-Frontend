@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/pages/auth/LoginPage.jsx
 import { useState, useEffect } from "react";
 import { Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
@@ -263,7 +264,7 @@ const LoginPage = () => {
               {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
 
-            <Button
+            {/* <Button
               fullWidth
               variant="outlined"
               startIcon={<GoogleIcon />}
@@ -272,7 +273,7 @@ const LoginPage = () => {
               className="hover-effect"
             >
               Continue with Google
-            </Button>
+            </Button> */}
             <Button
               component={RouterLink}
               to="/register"

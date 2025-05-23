@@ -1,9 +1,26 @@
-"use client"
-import { Box, Button, Card, CardContent, IconButton, Typography, useTheme } from "@mui/material"
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz"
-import RefreshIcon from "@mui/icons-material/Refresh"
-import { format, isValid } from "date-fns"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+/* eslint-disable no-unused-vars */
+"use client";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  IconButton,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { format, isValid } from "date-fns";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const SensorChartsSection = ({
   chartData,
@@ -12,7 +29,7 @@ const SensorChartsSection = ({
   visibleSensors,
   timeRange = "24", // ✅ NEW: Receive timeRange prop for dynamic formatting
 }) => {
-  const theme = useTheme()
+  const theme = useTheme();
 
   const getSensorTypeColor = (type) => {
     const colorMap = {
@@ -25,137 +42,138 @@ const SensorChartsSection = ({
       Ammonia: "#9c27b0",
       Turbidity: "#0A5EB0",
       NO2: "#673ab7",
-    }
-    return colorMap[type] || theme.palette.grey[500]
-  }
+    };
+    return colorMap[type] || theme.palette.grey[500];
+  };
 
   // ✅ FIX: Dynamic X-axis formatter based on time range
   const getTimeRangeFormatter = (timeRange) => {
-    const range = Number.parseInt(timeRange)
+    const range = Number.parseInt(timeRange);
 
     if (range <= 24) {
       // For 24h or less: show time (hours:minutes)
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "HH:mm")
+          const date = new Date(time);
+          return format(date, "HH:mm");
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     } else if (range <= 168) {
       // For 7 days (168h): show day of week
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "EEE") // Mon, Tue, Wed
+          const date = new Date(time);
+          return format(date, "EEE"); // Mon, Tue, Wed
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     } else {
       // For 30 days or longer: show month and date
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "MMM d")
+          const date = new Date(time);
+          return format(date, "MMM d");
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     }
-  }
+  };
 
   // ✅ FIX: Enhanced tooltip formatter for different time ranges
   const getTooltipFormatter = (timeRange) => {
-    const range = Number.parseInt(timeRange)
+    const range = Number.parseInt(timeRange);
 
     if (range <= 24) {
       // For 24h: show full date and time
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "MMM d, HH:mm")
+          const date = new Date(time);
+          return format(date, "MMM d, HH:mm");
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     } else if (range <= 168) {
       // For 7d: show day and date
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "EEE, MMM d")
+          const date = new Date(time);
+          return format(date, "EEE, MMM d");
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     } else {
       // For 30d+: show full date
       return (time) => {
-        if (!time) return ""
+        if (!time) return "";
         try {
-          const date = new Date(time)
-          return format(date, "MMM d, yyyy")
+          const date = new Date(time);
+          return format(date, "MMM d, yyyy");
         } catch (error) {
-          console.warn("Invalid date format:", time)
-          return ""
+          console.warn("Invalid date format:", time);
+          return "";
         }
-      }
+      };
     }
-  }
+  };
 
   // Get the formatters for current time range
-  const tickFormatter = getTimeRangeFormatter(timeRange)
-  const tooltipLabelFormatter = getTooltipFormatter(timeRange)
+  const tickFormatter = getTimeRangeFormatter(timeRange);
+  const tooltipLabelFormatter = getTooltipFormatter(timeRange);
 
   // Function to check if data spans multiple days
   const doesDataSpanMultipleDays = (chartData) => {
-    if (!Array.isArray(chartData) || chartData.length === 0) return false
+    if (!Array.isArray(chartData) || chartData.length === 0) return false;
 
     // Collect all dates from all sensors
-    const allDates = []
+    const allDates = [];
 
     chartData.forEach((sensor) => {
       if (Array.isArray(sensor.data)) {
         sensor.data.forEach((point) => {
           if (point.time) {
             // Extract just the date part (without time)
-            const date = new Date(point.time)
+            const date = new Date(point.time);
             if (isValid(date)) {
-              allDates.push(format(date, "yyyy-MM-dd"))
+              allDates.push(format(date, "yyyy-MM-dd"));
             }
           }
-        })
+        });
       }
-    })
+    });
 
     // If we have unique dates more than 1, data spans multiple days
-    const uniqueDates = [...new Set(allDates)]
-    return uniqueDates.length > 1
-  }
+    const uniqueDates = [...new Set(allDates)];
+    return uniqueDates.length > 1;
+  };
 
   // Process and validate chart data
-  const validChartData = Array.isArray(chartData) ? chartData : []
+  const validChartData = Array.isArray(chartData) ? chartData : [];
 
   // FIXED: Explicitly filter the chart data based on visibleSensors array
   // Only include a sensor if it exists in visibleSensors array
   const filteredChartData = validChartData.filter(
-    (sensorData) => visibleSensors && visibleSensors.includes(sensorData.type),
-  )
+    (sensorData) => visibleSensors && visibleSensors.includes(sensorData.type)
+  );
 
   // If no charts are selected but there is chart data available, show a message
-  const showNoChartsMessage = filteredChartData.length === 0 && validChartData.length > 0
+  const showNoChartsMessage =
+    filteredChartData.length === 0 && validChartData.length > 0;
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -185,7 +203,8 @@ const SensorChartsSection = ({
                 No sensor charts selected
               </Typography>
               <Typography color="text.secondary" variant="body2">
-                Toggle sensors in the Active Sensors panel to display their charts
+                Toggle sensors in the Active Sensors panel to display their
+                charts
               </Typography>
             </Box>
           </CardContent>
@@ -212,8 +231,10 @@ const SensorChartsSection = ({
                 }}
               >
                 <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                  {sensorTypeData.type ? sensorTypeData.type.toUpperCase() : "UNKNOWN"} Chart
-
+                  {sensorTypeData.type
+                    ? sensorTypeData.type.toUpperCase()
+                    : "UNKNOWN"}{" "}
+                  Chart
                   <Typography
                     component="span"
                     variant="caption"
@@ -227,8 +248,8 @@ const SensorChartsSection = ({
                     {Number.parseInt(timeRange) <= 24
                       ? `${timeRange}h`
                       : Number.parseInt(timeRange) <= 168
-                        ? `${Math.round(Number.parseInt(timeRange) / 24)}d`
-                        : `${Math.round(Number.parseInt(timeRange) / 24)}d`}
+                      ? `${Math.round(Number.parseInt(timeRange) / 24)}d`
+                      : `${Math.round(Number.parseInt(timeRange) / 24)}d`}
                     )
                   </Typography>
                 </Typography>
@@ -236,17 +257,40 @@ const SensorChartsSection = ({
                   <MoreHorizIcon />
                 </IconButton> */}
               </Box>
-              {sensorTypeData.data && Array.isArray(sensorTypeData.data) && sensorTypeData.data.length > 0 ? (
+              {sensorTypeData.data &&
+              Array.isArray(sensorTypeData.data) &&
+              sensorTypeData.data.length > 0 ? (
                 <Box sx={{ width: "100%", height: 250 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={sensorTypeData.data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <AreaChart
+                      data={sensorTypeData.data}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
                       <defs>
-                        <linearGradient id={`gradient-${sensorTypeData.type}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={getSensorTypeColor(sensorTypeData.type)} stopOpacity={0.8} />
-                          <stop offset="95%" stopColor={getSensorTypeColor(sensorTypeData.type)} stopOpacity={0.1} />
+                        <linearGradient
+                          id={`gradient-${sensorTypeData.type}`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor={getSensorTypeColor(sensorTypeData.type)}
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor={getSensorTypeColor(sensorTypeData.type)}
+                            stopOpacity={0.1}
+                          />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#f0f0f0"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="time"
                         tickFormatter={tickFormatter}
@@ -311,7 +355,9 @@ const SensorChartsSection = ({
                     width: "100%",
                   }}
                 >
-                  <Typography color="text.secondary">No data available for this time range</Typography>
+                  <Typography color="text.secondary">
+                    No data available for this time range
+                  </Typography>
                 </Box>
               )}
             </CardContent>
@@ -342,7 +388,13 @@ const SensorChartsSection = ({
               <Typography color="text.secondary" gutterBottom>
                 No chart data available
               </Typography>
-              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={onRefresh} size="small" sx={{ mt: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={onRefresh}
+                size="small"
+                sx={{ mt: 1 }}
+              >
                 Refresh Data
               </Button>
             </Box>
@@ -350,7 +402,7 @@ const SensorChartsSection = ({
         </Card>
       )}
     </Box>
-  )
-}
+  );
+};
 
-export default SensorChartsSection
+export default SensorChartsSection;

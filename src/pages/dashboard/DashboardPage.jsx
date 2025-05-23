@@ -48,7 +48,6 @@ import LatestTimestampCard from "../../components/dashboard/LatestTimestampCard"
 import AverageValueCardsGrid from "../../components/dashboard/AverageValueCardsGrid";
 import ActiveSensorsCard from "../../components/dashboard/ActiveSensorsCard";
 import SensorChartsSection from "../../components/dashboard/SensorChartsSection";
-// Removed NotificationsCard import
 
 const drawerWidth = 240;
 
@@ -285,7 +284,8 @@ const DashboardContent = () => {
               width: "100%",
               flexDirection: { xs: "column", md: "row" },
               gap: 3,
-              height: { md: "calc(100vh - 180px)" }, // Adjusted height calculation
+              // KEEP ORIGINAL: Fixed height for dashboard
+              height: { md: "calc(100vh - 180px)" },
             }}
           >
             {/* Left sidebar with cards - UPDATED: Removed NotificationsCard */}
@@ -405,6 +405,12 @@ const DashboardPage = () => {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [open, setOpen] = useState(!isMobile);
+
+  // NEW: Determine if we're on the main dashboard or other pages
+  const isDashboardHome =
+    location.pathname === "/dashboard" ||
+    location.pathname === "/dashboard/" ||
+    location.pathname.startsWith("/dashboard?");
 
   useEffect(() => {
     const handleResize = () => {
@@ -584,13 +590,29 @@ const DashboardPage = () => {
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
           backgroundColor: theme.palette.grey[50],
-          minHeight: "100vh",
-          height: "100vh", // Add explicit height
-          width: "100%",
-          maxWidth: "100%",
-          overflowX: "hidden",
-          display: "flex", // Add flex display
-          flexDirection: "column", // Stack children vertically
+          // CONDITIONAL STYLING: Different for dashboard vs other pages
+          ...(isDashboardHome
+            ? {
+                // Dashboard: Fixed height, no scroll
+                minHeight: "100vh",
+                height: "100vh",
+                width: "100%",
+                maxWidth: "100%",
+                overflowX: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "hidden", // Dashboard doesn't scroll at main level
+              }
+            : {
+                // Other pages: Allow scrolling
+                minHeight: "100vh",
+                width: "100%",
+                maxWidth: "100%",
+                overflowX: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto", // Other pages can scroll
+              }),
         }}
       >
         <Toolbar />
@@ -598,10 +620,17 @@ const DashboardPage = () => {
           maxWidth="xl"
           disableGutters
           sx={{
-            flex: 1, // Make it fill available space
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden", // Prevent overflow
+            // CONDITIONAL STYLING: Different overflow for dashboard vs other pages
+            ...(isDashboardHome
+              ? {
+                  overflow: "hidden", // Dashboard: contained
+                }
+              : {
+                  overflow: "visible", // Other pages: scrollable
+                }),
           }}
         >
           <Routes>
@@ -613,7 +642,6 @@ const DashboardPage = () => {
               path="sensors/:id/readings"
               element={<SensorReadingsPage />}
             />
-
 
             {isAuthenticated && user?.role === "ADMIN" && (
               <>
