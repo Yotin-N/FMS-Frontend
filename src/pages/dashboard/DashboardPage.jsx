@@ -26,7 +26,7 @@ import AgricultureIcon from "@mui/icons-material/Agriculture";
 import DevicesIcon from "@mui/icons-material/Devices";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import PeopleIcon from "@mui/icons-material/People";
-import SettingsIcon from "@mui/icons-material/Settings"; // Add this import
+import SettingsIcon from "@mui/icons-material/Settings";
 import { getFarms } from "../../services/api";
 import {
   getDashboardSummary,
@@ -42,7 +42,7 @@ import SensorReadingsPage from "../sensor/SensorReadingsPage";
 import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
-import SettingsPage from "../settings/SettingsPage"; // Add this import
+import SettingsPage from "../settings/SettingsPage";
 
 // Dashboard components
 import DashboardControls from "../../components/dashboard/DashboardControls";
@@ -50,7 +50,7 @@ import LatestTimestampCard from "../../components/dashboard/LatestTimestampCard"
 import AverageValueCardsGrid from "../../components/dashboard/AverageValueCardsGrid";
 import ActiveSensorsCard from "../../components/dashboard/ActiveSensorsCard";
 import SensorChartsSection from "../../components/dashboard/SensorChartsSection";
-import NotificationsCard from "../../components/dashboard/NotificationsCard";
+// Removed NotificationsCard import
 
 const drawerWidth = 240;
 
@@ -71,21 +71,17 @@ const DashboardContent = () => {
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState("24");
   const [selectedTab, setSelectedTab] = useState(0);
-  const [notifications] = useState([
-    { id: 1, message: "Warning pH: value exceeds limit", type: "warning" },
-    { id: 2, message: "Warning DO: low oxygen levels", type: "warning" },
-    { id: 3, message: "Warning pH: value exceeds limit", type: "warning" },
-  ]);
+  // State for controlling gauge display (new addition)
+  const [showAllGauges, setShowAllGauges] = useState(false);
   const [visibleSensors, setVisibleSensors] = useState([]);
 
   // Make sure we have fallback data if real data is empty
   useEffect(() => {
     if (selectedFarmId && chartData.length === 0 && !isLoading) {
-      // Create default empty chart data to maintain layout
       const defaultChartTypes = ["DO", "pH", "SALT", "TDS"];
       const defaultChartData = defaultChartTypes.map((type) => ({
         type,
-        data: [], // Empty data
+        data: [],
       }));
       setChartData(defaultChartData);
     }
@@ -95,7 +91,6 @@ const DashboardContent = () => {
     loadFarms();
   }, []);
 
-  // Debug logging for visibleSensors
   useEffect(() => {
     console.log("DashboardContent - visibleSensors:", visibleSensors);
   }, [visibleSensors]);
@@ -104,7 +99,6 @@ const DashboardContent = () => {
     console.log("DashboardContent - dashboardData:", dashboardData);
 
     if (dashboardData && dashboardData.averages) {
-      // Initialize visibleSensors with all available sensor types
       const sensorTypes = Object.keys(dashboardData.averages);
       console.log(
         "DashboardContent - Setting visibleSensors from dashboardData:",
@@ -112,7 +106,6 @@ const DashboardContent = () => {
       );
       setVisibleSensors(sensorTypes);
     } else if (chartData && chartData.length > 0) {
-      // Fallback to chart data if dashboard data is not available
       const chartTypes = chartData.map((chart) => chart.type);
       console.log(
         "DashboardContent - Setting visibleSensors from chartData:",
@@ -176,7 +169,6 @@ const DashboardContent = () => {
   };
 
   const handleToggleSensor = (sensorType) => {
-    // For charts - keep the toggle functionality
     setVisibleSensors((prev) => {
       if (prev.includes(sensorType)) {
         return prev.filter((type) => type !== sensorType);
@@ -184,6 +176,11 @@ const DashboardContent = () => {
         return [...prev, sensorType];
       }
     });
+  };
+
+  // New function to handle show all gauges toggle
+  const handleToggleShowAllGauges = () => {
+    setShowAllGauges((prev) => !prev);
   };
 
   const loadDashboardData = async () => {
@@ -202,7 +199,6 @@ const DashboardContent = () => {
 
   const handleSensorConfigClick = (sensorType) => {
     console.log(`Config clicked for sensor: ${sensorType}`);
-    // Navigate to settings page with the specific sensor type
     navigate(
       `/dashboard/settings?farmId=${selectedFarmId}&sensorType=${sensorType}`
     );
@@ -250,7 +246,6 @@ const DashboardContent = () => {
         </Alert>
       )}
 
-      {/* Farm selection and time range controls */}
       {farms.length > 0 && (
         <DashboardControls
           farms={farms}
@@ -286,7 +281,6 @@ const DashboardContent = () => {
 
       {selectedFarmId && (
         <Box sx={{ width: "100%" }}>
-          {/* Left column with side cards */}
           <Box
             sx={{
               display: "flex",
@@ -295,13 +289,15 @@ const DashboardContent = () => {
               gap: 3,
             }}
           >
-            {/* Left sidebar with cards */}
+            {/* Left sidebar with cards - UPDATED: Removed NotificationsCard */}
             <Box
               sx={{
                 width: { xs: "100%", md: "25%" },
                 minWidth: { md: "250px" },
                 maxWidth: { md: "350px" },
                 order: { xs: 2, md: 1 },
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               {/* Date Time Card */}
@@ -311,18 +307,17 @@ const DashboardContent = () => {
                 isLoading={isLoading}
               />
 
-              {/* Active Sensors Card */}
+              {/* Active Sensors Card - UPDATED: Now the last element */}
               <ActiveSensorsCard
                 averages={dashboardData?.averages}
                 visibleSensors={visibleSensors}
                 onToggleSensor={handleToggleSensor}
+                showAllGauges={showAllGauges}
+                onToggleShowAllGauges={handleToggleShowAllGauges}
               />
-
-              {/* Notifications Card */}
-              <NotificationsCard notifications={notifications} />
             </Box>
 
-            {/* Container for sensor values and charts (moved to right) */}
+            {/* Container for sensor values and charts */}
             <Box
               sx={{
                 flex: 1,
@@ -330,10 +325,11 @@ const DashboardContent = () => {
                 order: { xs: 1, md: 2 },
               }}
             >
-              {/* Sensor Values Cards */}
+              {/* Sensor Values Cards - UPDATED: Pass showAllGauges state */}
               <AverageValueCardsGrid
                 sensorData={dashboardData?.averages}
                 visibleSensors={visibleSensors}
+                showAllGauges={showAllGauges}
                 onSensorConfigClick={handleSensorConfigClick}
               />
 
@@ -352,6 +348,7 @@ const DashboardContent = () => {
   );
 };
 
+// Rest of the DashboardPage component remains the same...
 const DashboardPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -451,10 +448,8 @@ const DashboardPage = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      {/* Top Navbar */}
       <Navbar toggleDrawer={toggleDrawer} open={open} />
 
-      {/* Sidebar */}
       <Drawer
         variant={isMobile ? "temporary" : "permanent"}
         open={open}
@@ -466,7 +461,7 @@ const DashboardPage = () => {
             width: drawerWidth,
             boxSizing: "border-box",
             borderRight: `1px solid ${theme.palette.divider}`,
-            overflowX: "hidden", // Prevent horizontal scrolling
+            overflowX: "hidden",
             ...(!open && {
               overflowX: "hidden",
               width: theme.spacing(7),
@@ -536,7 +531,6 @@ const DashboardPage = () => {
         </Box>
       </Drawer>
 
-      {/* Main Content */}
       <Box
         component="main"
         sx={{

@@ -19,9 +19,6 @@ import {
   Checkbox,
   Grid,
   CircularProgress,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -36,7 +33,17 @@ import {
   getDefaultThresholds,
 } from "../../services/thresholdApi";
 
-const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
+const SensorThresholdConfig = ({
+  farmId,
+  sensorType,
+  onSuccess,
+  onError,
+  onClose,
+  onSave,
+  onCancel,
+  onAddRange,
+  onResetToDefault,
+}) => {
   // State
   const [thresholds, setThresholds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -267,281 +274,223 @@ const SensorThresholdConfig = ({ farmId, sensorType, onSuccess, onError }) => {
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Modal Title */}
-      <DialogTitle sx={{ pb: 1 }}>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-          Configure {sensorType} Thresholds
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Set threshold ranges for {sensorType} sensor monitoring
-        </Typography>
-      </DialogTitle>
+    <>
+      {/* Info Section */}
+      <Box sx={{ mb: 3 }}>
+        <Chip
+          label={`${thresholds.length} threshold ranges`}
+          size="small"
+          sx={{ mr: 1 }}
+        />
+        {unit && (
+          <Chip label={`Unit: ${unit}`} size="small" variant="outlined" />
+        )}
+      </Box>
 
-      {/* Scrollable Content Area */}
-      <DialogContent sx={{ flex: 1, overflow: "auto", p: 3 }}>
-        {/* Info Chip */}
-        <Box sx={{ mb: 3 }}>
-          <Chip
-            label={`${thresholds.length} threshold ranges`}
-            size="small"
-            sx={{ mr: 1 }}
-          />
-          {unit && (
-            <Chip label={`Unit: ${unit}`} size="small" variant="outlined" />
-          )}
+      {/* Threshold Ranges */}
+      {thresholds.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 4 }}>
+          <Typography color="text.secondary">
+            No threshold ranges configured. Click "Add Range" to create one.
+          </Typography>
         </Box>
-
-        {/* Threshold Ranges */}
-        {thresholds.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography color="text.secondary">
-              No threshold ranges configured. Click "Add Range" to create one.
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={2}>
-            {thresholds.map((threshold, index) => (
-              <Grid item xs={12} key={index}>
-                <Card
+      ) : (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+            maxWidth: "600px",
+            mx: "auto",
+          }}
+        >
+          {thresholds.map((threshold, index) => (
+            <Card
+              key={index}
+              sx={{
+                width: "100%",
+                border: `2px solid ${threshold.colorCode}20`,
+                "&:hover": {
+                  border: `2px solid ${threshold.colorCode}40`,
+                },
+              }}
+            >
+              <CardContent>
+                <Box
                   sx={{
-                    border: `2px solid ${threshold.colorCode}20`,
-                    "&:hover": {
-                      border: `2px solid ${threshold.colorCode}40`,
-                    },
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
                   }}
                 >
-                  <CardContent>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Range {index + 1}
+                  </Typography>
+                  <IconButton
+                    color="error"
+                    onClick={() => removeThresholdRange(index)}
+                    disabled={isSaving}
+                    size="small"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+
+                <Grid container spacing={2}>
+                  {/* Severity Selection */}
+                  <Grid item xs={12} md={3}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Severity</InputLabel>
+                      <Select
+                        value={threshold.severityLevel}
+                        onChange={(e) =>
+                          updateThreshold(
+                            index,
+                            "severityLevel",
+                            e.target.value
+                          )
+                        }
+                        label="Severity"
+                        disabled={isSaving}
+                      >
+                        {severityLevels.map((severity) => (
+                          <MenuItem key={severity.value} value={severity.value}>
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <Box
+                                sx={{
+                                  width: 16,
+                                  height: 16,
+                                  backgroundColor: severity.color,
+                                  borderRadius: "50%",
+                                  mr: 1,
+                                }}
+                              />
+                              {severity.label}
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  {/* Min Value */}
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label={`Min Value ${unit ? `(${unit})` : ""}`}
+                      type="number"
+                      value={
+                        threshold.minValue !== null ? threshold.minValue : ""
+                      }
+                      onChange={(e) =>
+                        handleNumericInputChange(
+                          index,
+                          "minValue",
+                          e.target.value
+                        )
+                      }
+                      onBlur={(e) => {
+                        // Format to 2 decimal places on blur
+                        const value = e.target.value;
+                        if (value !== "" && !isNaN(parseFloat(value))) {
+                          updateThreshold(index, "minValue", parseFloat(value));
+                        }
                       }}
-                    >
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Range {index + 1}
-                      </Typography>
-                      <IconButton
-                        color="error"
-                        onClick={() => removeThresholdRange(index)}
+                      disabled={isSaving}
+                      placeholder="No minimum"
+                      size="small"
+                      fullWidth
+                      inputProps={{
+                        step: "0.01",
+                      }}
+                    />
+                  </Grid>
+
+                  {/* Max Value */}
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label={`Max Value ${unit ? `(${unit})` : ""}`}
+                      type="number"
+                      value={
+                        threshold.maxValue !== null ? threshold.maxValue : ""
+                      }
+                      onChange={(e) =>
+                        handleNumericInputChange(
+                          index,
+                          "maxValue",
+                          e.target.value
+                        )
+                      }
+                      onBlur={(e) => {
+                        // Format to 2 decimal places on blur
+                        const value = e.target.value;
+                        if (value !== "" && !isNaN(parseFloat(value))) {
+                          updateThreshold(index, "maxValue", parseFloat(value));
+                        }
+                      }}
+                      disabled={isSaving}
+                      placeholder="No maximum"
+                      size="small"
+                      fullWidth
+                      inputProps={{
+                        step: "0.01",
+                      }}
+                    />
+                  </Grid>
+
+                  {/* Label */}
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      label="Label"
+                      value={threshold.label || ""}
+                      onChange={(e) =>
+                        updateThreshold(index, "label", e.target.value)
+                      }
+                      disabled={isSaving}
+                      placeholder="Range description"
+                      size="small"
+                      fullWidth
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Additional Options */}
+                <Box sx={{ mt: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={threshold.notificationEnabled || false}
+                        onChange={(e) =>
+                          updateThreshold(
+                            index,
+                            "notificationEnabled",
+                            e.target.checked
+                          )
+                        }
                         disabled={isSaving}
                         size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-
-                    <Grid container spacing={2}>
-                      {/* Severity Selection */}
-                      <Grid item xs={12} md={3}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Severity</InputLabel>
-                          <Select
-                            value={threshold.severityLevel}
-                            onChange={(e) =>
-                              updateThreshold(
-                                index,
-                                "severityLevel",
-                                e.target.value
-                              )
-                            }
-                            label="Severity"
-                            disabled={isSaving}
-                          >
-                            {severityLevels.map((severity) => (
-                              <MenuItem
-                                key={severity.value}
-                                value={severity.value}
-                              >
-                                <Box
-                                  sx={{ display: "flex", alignItems: "center" }}
-                                >
-                                  <Box
-                                    sx={{
-                                      width: 16,
-                                      height: 16,
-                                      backgroundColor: severity.color,
-                                      borderRadius: "50%",
-                                      mr: 1,
-                                    }}
-                                  />
-                                  {severity.label}
-                                </Box>
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-
-                      {/* Min Value */}
-                      <Grid item xs={12} md={3}>
-                        <TextField
-                          label={`Min Value ${unit ? `(${unit})` : ""}`}
-                          type="number"
-                          value={
-                            threshold.minValue !== null
-                              ? threshold.minValue
-                              : ""
-                          }
-                          onChange={(e) =>
-                            handleNumericInputChange(
-                              index,
-                              "minValue",
-                              e.target.value
-                            )
-                          }
-                          onBlur={(e) => {
-                            // Format to 2 decimal places on blur
-                            const value = e.target.value;
-                            if (value !== "" && !isNaN(parseFloat(value))) {
-                              updateThreshold(
-                                index,
-                                "minValue",
-                                parseFloat(value)
-                              );
-                            }
-                          }}
-                          disabled={isSaving}
-                          placeholder="No minimum"
-                          size="small"
-                          fullWidth
-                          inputProps={{
-                            step: "0.01",
-                          }}
-                        />
-                      </Grid>
-
-                      {/* Max Value */}
-                      <Grid item xs={12} md={3}>
-                        <TextField
-                          label={`Max Value ${unit ? `(${unit})` : ""}`}
-                          type="number"
-                          value={
-                            threshold.maxValue !== null
-                              ? threshold.maxValue
-                              : ""
-                          }
-                          onChange={(e) =>
-                            handleNumericInputChange(
-                              index,
-                              "maxValue",
-                              e.target.value
-                            )
-                          }
-                          onBlur={(e) => {
-                            // Format to 2 decimal places on blur
-                            const value = e.target.value;
-                            if (value !== "" && !isNaN(parseFloat(value))) {
-                              updateThreshold(
-                                index,
-                                "maxValue",
-                                parseFloat(value)
-                              );
-                            }
-                          }}
-                          disabled={isSaving}
-                          placeholder="No maximum"
-                          size="small"
-                          fullWidth
-                          inputProps={{
-                            step: "0.01",
-                          }}
-                        />
-                      </Grid>
-
-                      {/* Label */}
-                      <Grid item xs={12} md={3}>
-                        <TextField
-                          label="Label"
-                          value={threshold.label || ""}
-                          onChange={(e) =>
-                            updateThreshold(index, "label", e.target.value)
-                          }
-                          disabled={isSaving}
-                          placeholder="Range description"
-                          size="small"
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-
-                    {/* Additional Options */}
-                    <Box sx={{ mt: 2 }}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={threshold.notificationEnabled || false}
-                            onChange={(e) =>
-                              updateThreshold(
-                                index,
-                                "notificationEnabled",
-                                e.target.checked
-                              )
-                            }
-                            disabled={isSaving}
-                            size="small"
-                          />
-                        }
-                        label="Enable notifications for this range"
                       />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </DialogContent>
+                    }
+                    label="Enable notifications for this range"
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      )}
 
-      {/* Fixed Action Buttons at Bottom */}
-      <DialogActions
-        sx={{
-          p: 3,
-          borderTop: "1px solid #e0e0e0",
-          backgroundColor: "#fafafa",
-          gap: 1,
-        }}
-      >
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={addThresholdRange}
-          disabled={isSaving}
-          sx={{ textTransform: "none" }}
-        >
-          Add Range
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<RestoreIcon />}
-          onClick={resetToDefaults}
-          disabled={isSaving}
-          sx={{ textTransform: "none" }}
-        >
-          {isSaving ? "Resetting..." : "Reset to Default"}
-        </Button>
-        <Box sx={{ flexGrow: 1 }} />
-        <Button
-          variant="outlined"
-          onClick={() => window.history.back()}
-          disabled={isSaving}
-          sx={{ textTransform: "none" }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={saveThresholds}
-          disabled={isSaving}
-          sx={{ textTransform: "none" }}
-        >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </Button>
-      </DialogActions>
-    </Box>
+      {/* Pass functions and state to parent for action buttons */}
+      {/* This component will expose these through props to the parent */}
+      <Box sx={{ display: "none" }}>
+        {/* Hidden elements that expose functionality to parent */}
+        {onAddRange && onAddRange(addThresholdRange)}
+        {onResetToDefault && onResetToDefault(resetToDefaults, isSaving)}
+        {onSave && onSave(saveThresholds, isSaving)}
+        {onCancel && onCancel()}
+      </Box>
+    </>
   );
 };
 

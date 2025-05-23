@@ -6,6 +6,7 @@ import {
   useTheme,
   Switch,
   Divider,
+  FormControlLabel,
 } from "@mui/material";
 import ThermostatIcon from "@mui/icons-material/Thermostat";
 import OpacityIcon from "@mui/icons-material/Opacity";
@@ -14,7 +15,13 @@ import ScienceIcon from "@mui/icons-material/Science";
 import BoltIcon from "@mui/icons-material/Bolt";
 import GrainIcon from "@mui/icons-material/Grain";
 
-const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
+const ActiveSensorsCard = ({
+  averages,
+  visibleSensors,
+  onToggleSensor,
+  showAllGauges,
+  onToggleShowAllGauges,
+}) => {
   const theme = useTheme();
 
   const getSensorTypeColor = (type) => {
@@ -46,6 +53,9 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
       NH3: <ScienceIcon />,
       EC: <BoltIcon />,
       TDS: <GrainIcon />,
+      Ammonia: <ScienceIcon />,
+      Turbidity: <OpacityIcon />,
+      NO2: <ScienceIcon />,
     };
     return iconMap[type] || <ThermostatIcon />;
   };
@@ -62,10 +72,14 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
         borderRadius: 2,
         boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         height: "auto",
-        maxHeight: 400,
+        maxHeight: 450, // Slightly increased to accommodate toggle
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <CardContent sx={{ p: 0 }}>
+      <CardContent
+        sx={{ p: 0, display: "flex", flexDirection: "column", height: "100%" }}
+      >
         {/* Header */}
         <Box sx={{ p: 2, pb: 1.5 }}>
           <Typography
@@ -75,13 +89,40 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
             Active Sensors
           </Typography>
         </Box>
+
+        {/* Toggle Switch for Show All Gauges */}
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showAllGauges}
+                onChange={onToggleShowAllGauges}
+                color="primary"
+                size="small"
+              />
+            }
+            label={
+              <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                {showAllGauges ? "Show Less" : "Show All Gauges"}
+              </Typography>
+            }
+            sx={{
+              margin: 0,
+              "& .MuiFormControlLabel-label": {
+                fontSize: "0.875rem",
+                color: theme.palette.text.secondary,
+              },
+            }}
+          />
+        </Box>
+
         <Divider />
 
         {/* Scrollable content */}
         <Box
           sx={{
             overflowY: "auto",
-            maxHeight: "300px",
+            flex: 1,
             // Firefox scrollbar
             scrollbarWidth: "thin",
             scrollbarColor: `${theme.palette.grey[400]} ${theme.palette.grey[100]}`,
@@ -174,10 +215,11 @@ const ActiveSensorsCard = ({ averages, visibleSensors, onToggleSensor }) => {
                     </Box>
                   </Box>
 
-                  {/* Right - Switch */}
+                  {/* Right - Switch for chart visibility */}
                   <Switch
                     checked={visibleSensors.includes(type)}
                     onChange={() => onToggleSensor(type)}
+                    size="small"
                     sx={{
                       "& .MuiSwitch-switchBase.Mui-checked": {
                         color: sensorColor,

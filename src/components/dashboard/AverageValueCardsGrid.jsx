@@ -3,9 +3,11 @@ import {
   Box,
   Typography,
   IconButton,
-  Tooltip,
+  Popover,
   useTheme,
   Grid,
+  Paper,
+  Divider,
 } from "@mui/material";
 import {
   WarningAmber as WarningAmberIcon,
@@ -16,11 +18,24 @@ import {
 const AverageValueCardsGrid = ({
   sensorData,
   visibleSensors,
-  onSensorConfigClick,
+  showAllGauges = false,
 }) => {
   const theme = useTheme();
+  const [popoverAnchor, setPopoverAnchor] = React.useState(null);
+  const [popoverContent, setPopoverContent] = React.useState("");
 
-  // Enhanced Gauge Circle Component
+  // Handle popover for suggestion messages
+  const handlePopoverOpen = (event, suggestion) => {
+    setPopoverAnchor(event.currentTarget);
+    setPopoverContent(suggestion || "No suggestion available");
+  };
+
+  const handlePopoverClose = () => {
+    setPopoverAnchor(null);
+    setPopoverContent("");
+  };
+
+  // Enhanced Gauge Circle Component with improved suggestion display
   const GaugeCircle = ({
     type,
     value,
@@ -36,7 +51,33 @@ const AverageValueCardsGrid = ({
     const strokeWidth = 12;
     const radius = (circleSize - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
-    const startAngle = -225; // Start from lower left (225 degrees)
+    const startAngle = -225;
+
+    // Get sensor-specific suggestion messages
+    const getSensorSuggestion = (sensorType, severity) => {
+      if (severity === "normal" || severity === "green") return null;
+
+      const suggestions = {
+        TempA: "แก้ไขได้ยากเพราะอุณหภูมิน้ำเปลี่ยนแปลงตามสิ่งแวดล้อม",
+        TempB: "แก้ไขได้ยากเพราะอุณหภูมิน้ำเปลี่ยนแปลงตามสิ่งแวดล้อม",
+        TempC: "แก้ไขได้ยากเพราะอุณหภูมิน้ำเปลี่ยนแปลงตามสิ่งแวดล้อม",
+        DO: "เพิ่มการตีน้ำเพื่อเพิ่มปริมาณออกซิเจนที่ละลายในน้ำ",
+        pH: "ให้ถ่ายน้ำลางส่วนและตีน้ำเพื่อให้แอมโมเนียระเหยสู่อากาศหรืออาจใช้สารเคมีที่มีฤทธิ์เป็นกรดในปริมาณที่เหมาะสมเพื่อช่วยลดระดับความเป็นด่างเพื่อให้แอมโมเนียอยู่ในรูปที่เป็นอันตรายต่อสัตว์น้ำ",
+        Ammonia:
+          "ให้ถ่ายน้ำลางส่วนและตีน้ำเพื่อให้แอมโมเนียระเหยสู่อากาศหรืออาจใช้สารเคมีที่มีฤทธิ์เป็นกรดในปริมาณที่เหมาะสมเพื่อช่วยลดระดับความเป็นด่างเพื่อให้แอมโมเนียอยู่ในรูปที่เป็นอันตรายต่อสัตว์น้ำ",
+        Turbidity:
+          "ค่าที่ต่ำเกินไปแสดงว่ามีแพลงก์ตอนหนาแน่นเกินไปให้ถ่ายน้ำบางส่วนเพื่อลดความหนาแน่นของแพลงก์ตอนลง ค่าที่มากเกินไปแสดงว่าน้ำในบ่อเลี้ยงใสเกินไปต้องปรับน้ำให้มีแพลงก์ตอนหนาแน่นมากขึ้นด้วยการเติมปุ๋ย",
+        NO2: "เปลี่ยนถ่ายน้ำหรือเพิ่มความเค็มของน้ำเพื่อให้ความเป็นพิษของไนไตร์ลดลง",
+      };
+
+      return (
+        suggestions[sensorType] ||
+        suggestion ||
+        "กรุณาตรวจสอบค่าเซ็นเซอร์และปรับปรุงตามความเหมาะสม"
+      );
+    };
+
+    const displaySuggestion = getSensorSuggestion(type, severity);
 
     // Use thresholdRanges to determine actual min/max for gauge scaling
     const getGaugeRange = () => {
@@ -82,7 +123,7 @@ const AverageValueCardsGrid = ({
     const isAlertVisible =
       severity && severity !== "normal" && severity !== "green";
 
-    // Get appropriate alert icon based on severity
+    // Get appropriate alert icon based on severity with improved circular styling
     const getAlertIcon = () => {
       if (!isAlertVisible) return null;
 
@@ -105,35 +146,35 @@ const AverageValueCardsGrid = ({
           mb: 2,
         }}
       >
-        {/* Alert Icon (conditionally visible) */}
-        {isAlertVisible && onSensorConfigClick && (
-          <Tooltip
-            title={suggestion || `${severity} status detected`}
-            placement="top"
-            arrow
+        {/* Enhanced Alert Icon with Popover */}
+        {isAlertVisible && displaySuggestion && (
+          <IconButton
+            size="small"
+            onClick={(event) => handlePopoverOpen(event, displaySuggestion)}
+            sx={{
+              position: "absolute",
+              top: -8,
+              right: -10,
+              zIndex: 3,
+              width: 32,
+              height: 32,
+              backgroundColor: "rgba(255,255,255,0.95)",
+              border: `2px solid ${
+                severityColor || theme.palette.warning.main
+              }`,
+              borderRadius: "50%",
+              color: severityColor || theme.palette.warning.main,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,1)",
+                transform: "scale(1.1)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              },
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
           >
-            <IconButton
-              size="small"
-              onClick={() => onSensorConfigClick(type)}
-              sx={{
-                position: "absolute",
-                top: -8,
-                right: -10,
-                zIndex: 3,
-                backgroundColor: "rgba(255,255,255,0.9)",
-                border: `1px solid ${theme.palette.divider}`,
-                color: severityColor || theme.palette.warning.main,
-                "&:hover": {
-                  backgroundColor: "rgba(255,255,255,1)",
-                  transform: "scale(1.1)",
-                  color: severityColor || theme.palette.warning.dark,
-                },
-                transition: "all 0.2s",
-              }}
-            >
-              {getAlertIcon()}
-            </IconButton>
-          </Tooltip>
+            {getAlertIcon()}
+          </IconButton>
         )}
 
         <Box
@@ -255,6 +296,17 @@ const AverageValueCardsGrid = ({
       )
     : [];
 
+  // Control how many gauges to show based on showAllGauges state
+  const getDisplayedSensors = () => {
+    if (showAllGauges) {
+      return sensors;
+    }
+    // Show only first 3-5 sensors for single row display
+    return sensors.slice(0, 4);
+  };
+
+  const displayedSensors = getDisplayedSensors();
+
   if (sensors.length === 0) {
     return (
       <Box sx={{ width: "100%", mb: 4 }}>
@@ -282,8 +334,29 @@ const AverageValueCardsGrid = ({
 
   return (
     <Box sx={{ width: "100%", mb: 4 }}>
+      {/* Display count indicator */}
+      {sensors.length > 4 && (
+        <Box
+          sx={{
+            mb: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Showing {displayedSensors.length} of {sensors.length} sensors
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {showAllGauges
+              ? "All gauges displayed"
+              : "Limited view - toggle 'Show All' for complete view"}
+          </Typography>
+        </Box>
+      )}
+
       <Grid container spacing={3}>
-        {sensors.map(([type, data]) => {
+        {displayedSensors.map(([type, data]) => {
           const currentValue =
             data.latestValue !== null && data.latestValue !== undefined
               ? data.latestValue
@@ -307,6 +380,58 @@ const AverageValueCardsGrid = ({
           );
         })}
       </Grid>
+
+      {/* Enhanced Popover for suggestion messages - TOP CENTER OF SCREEN */}
+      <Popover
+        open={Boolean(popoverAnchor)}
+        anchorEl={null}
+        onClose={handlePopoverClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+        sx={{
+          "& .MuiPopover-paper": {
+            position: "fixed",
+            top: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: 320,
+            p: 2,
+            borderRadius: 2,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+            border: `1px solid ${theme.palette.divider}`,
+            zIndex: 1300,
+          },
+        }}
+      >
+        <Box>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 600,
+              color: theme.palette.primary.main,
+              mb: 1,
+            }}
+          >
+            คำแนะนำการแก้ไข
+          </Typography>
+          <Divider sx={{ mb: 1.5 }} />
+          <Typography
+            variant="body2"
+            sx={{
+              lineHeight: 1.6,
+              color: theme.palette.text.primary,
+            }}
+          >
+            {popoverContent}
+          </Typography>
+        </Box>
+      </Popover>
     </Box>
   );
 };

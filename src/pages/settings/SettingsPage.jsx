@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -27,6 +27,8 @@ import {
   Settings as SettingsIcon,
   Close as CloseIcon,
   Edit as EditIcon,
+  Add as AddIcon,
+  RestoreFromTrash as RestoreIcon,
 } from "@mui/icons-material";
 import { getFarms } from "../../services/api";
 import SensorThresholdConfig from "../../components/settings/SensorThresholdConfig";
@@ -50,6 +52,12 @@ const SettingsPage = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSensorType, setEditingSensorType] = useState(null);
+
+  // Refs for accessing child component functions
+  const addRangeRef = useRef(null);
+  const resetToDefaultRef = useRef(null);
+  const saveRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Available sensor types (from your backend enum)
   const availableSensorTypes = [
@@ -140,6 +148,7 @@ const SettingsPage = () => {
   // Handle successful threshold update
   const handleThresholdUpdate = (sensorType) => {
     setSuccess(`Thresholds for ${sensorType} updated successfully!`);
+    handleCloseModal();
   };
 
   // Handle threshold update error
@@ -168,6 +177,25 @@ const SettingsPage = () => {
     );
   };
 
+  // Functions to handle action buttons in DialogActions
+  const handleAddRange = () => {
+    if (addRangeRef.current) {
+      addRangeRef.current();
+    }
+  };
+
+  const handleResetToDefault = () => {
+    if (resetToDefaultRef.current) {
+      resetToDefaultRef.current();
+    }
+  };
+
+  const handleSave = () => {
+    if (saveRef.current) {
+      saveRef.current();
+    }
+  };
+
   return (
     <Box>
       {/* Page Header */}
@@ -175,9 +203,9 @@ const SettingsPage = () => {
         Sensor Threshold Settings
       </Typography>
 
-      {/* Farm Selection */}
+      {/* Farm Selection - Fixed width issue */}
       <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <FormControl fullWidth sx={{ maxWidth: 400 }}>
+        <FormControl sx={{ maxWidth: 300 }}>
           <InputLabel id="farm-select-label">Select Farm</InputLabel>
           <Select
             labelId="farm-select-label"
@@ -191,6 +219,10 @@ const SettingsPage = () => {
               }
               const farm = farms.find((f) => f.id === selected);
               return farm ? farm.name : "";
+            }}
+            sx={{
+              width: "100%",
+              maxWidth: { xs: "100%", sm: "400px" },
             }}
           >
             {farms.length === 0 ? (
@@ -372,12 +404,11 @@ const SettingsPage = () => {
         </Box>
       )}
 
-      {/* Edit Modal */}
+      {/* Fixed Modal Structure */}
       <Dialog
         open={isModalOpen}
         onClose={handleCloseModal}
         maxWidth="md"
-        fullWidth
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -385,67 +416,113 @@ const SettingsPage = () => {
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            pb: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h5" component="div" sx={{ fontWeight: 600 }}>
-              {editingSensorType &&
-                `Configure ${
-                  getSensorTypeDetails(editingSensorType).name
-                } Thresholds`}
-            </Typography>
-            {editingSensorType && (
-              <Typography variant="body2" color="text.secondary">
-                Farm: {farms.find((f) => f.id === selectedFarmId)?.name} • Type:{" "}
-                {editingSensorType}
-                {getSensorTypeDetails(editingSensorType).unit &&
-                  ` • Unit: ${getSensorTypeDetails(editingSensorType).unit}`}
-              </Typography>
-            )}
-          </Box>
-          <IconButton
-            edge="end"
-            onClick={handleCloseModal}
-            aria-label="close"
+        {/* Single DialogTitle - no duplicate */}
+        <DialogTitle>
+          <Box
             sx={{
-              color: "grey.500",
-              "&:hover": {
-                backgroundColor: "rgba(0,0,0,0.04)",
-              },
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            <CloseIcon />
-          </IconButton>
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                {editingSensorType &&
+                  `Configure ${
+                    getSensorTypeDetails(editingSensorType).name
+                  } Thresholds`}
+              </Typography>
+              {editingSensorType && (
+                <Typography variant="body2" color="text.secondary">
+                  Farm: {farms.find((f) => f.id === selectedFarmId)?.name} •
+                  Type: {editingSensorType}
+                  {getSensorTypeDetails(editingSensorType).unit &&
+                    ` • Unit: ${getSensorTypeDetails(editingSensorType).unit}`}
+                </Typography>
+              )}
+            </Box>
+            <IconButton
+              edge="end"
+              onClick={handleCloseModal}
+              aria-label="close"
+              sx={{
+                color: "grey.500",
+                "&:hover": {
+                  backgroundColor: "rgba(0,0,0,0.04)",
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
+        {/* DialogContent - scrollable content area */}
+        <DialogContent sx={{ flex: 1, overflow: "auto", p: 3 }}>
           {editingSensorType && selectedFarmId && (
             <SensorThresholdConfig
               farmId={selectedFarmId}
               sensorType={editingSensorType}
               onSuccess={() => handleThresholdUpdate(editingSensorType)}
               onError={handleThresholdError}
+              onAddRange={(fn) => {
+                addRangeRef.current = fn;
+              }}
+              onResetToDefault={(fn) => {
+                resetToDefaultRef.current = fn;
+              }}
+              onSave={(fn) => {
+                saveRef.current = fn;
+              }}
+              onSavingChange={setIsSaving}
             />
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, pt: 2 }}>
+        {/* DialogActions - fixed action bar at bottom */}
+        <DialogActions
+          sx={{
+            p: 3,
+            borderTop: "1px solid #e0e0e0",
+            backgroundColor: "#fafafa",
+            gap: 1,
+          }}
+        >
           <Button
-            onClick={handleCloseModal}
             variant="outlined"
-            sx={{
-              borderRadius: 1,
-              textTransform: "none",
-              fontWeight: 500,
-            }}
+            startIcon={<AddIcon />}
+            onClick={handleAddRange}
+            disabled={isSaving}
+            sx={{ textTransform: "none" }}
           >
-            Close
+            Add Range
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<RestoreIcon />}
+            onClick={handleResetToDefault}
+            disabled={isSaving}
+            sx={{ textTransform: "none" }}
+          >
+            {isSaving ? "Resetting..." : "Reset to Default"}
+          </Button>
+          <Box sx={{ flexGrow: 1 }} />
+          <Button
+            variant="outlined"
+            onClick={handleCloseModal}
+            disabled={isSaving}
+            sx={{ textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSave}
+            disabled={isSaving}
+            sx={{ textTransform: "none" }}
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogActions>
       </Dialog>

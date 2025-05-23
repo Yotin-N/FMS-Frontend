@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // src/pages/sensor/SensorListPage.jsx
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -86,7 +87,7 @@ const SensorListPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState(null);
 
-  const {user, isAuthenticated} = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Load farms on component mount
   useEffect(() => {
@@ -161,7 +162,10 @@ const SensorListPage = () => {
     setError(null);
 
     try {
-      const response = await getDevices(selectedFarmId, { page: 1, limit: 100 });
+      const response = await getDevices(selectedFarmId, {
+        page: 1,
+        limit: 100,
+      });
       const devicesData = response.data || [];
       setDevices(devicesData);
 
@@ -190,11 +194,11 @@ const SensorListPage = () => {
 
     try {
       const response = await getSensors(selectedDeviceId, { page, limit });
-      
+
       // Handle response data based on your API structure
       let sensorsData = [];
       let totalPagesCount = 1;
-      
+
       if (response.data) {
         sensorsData = response.data;
         totalPagesCount = response.totalPages || 1;
@@ -202,7 +206,7 @@ const SensorListPage = () => {
         sensorsData = response;
         totalPagesCount = Math.ceil(response.length / limit) || 1;
       }
-      
+
       setSensors(sensorsData);
       setFilteredSensors(sensorsData);
       setTotalPages(totalPagesCount);
@@ -687,31 +691,31 @@ const SensorListPage = () => {
                               <ShowChartIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          
-                          { isAuthenticated && user?.role === "ADMIN" && (
-                       <>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleEditClick(sensor)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteClick(sensor)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          </> )}
+
+                          {isAuthenticated && user?.role === "ADMIN" && (
+                            <>
+                              <Tooltip title="Edit">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleEditClick(sensor)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteClick(sensor)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
                         </Box>
                       </TableCell>
-
                     </TableRow>
                   ))
                 )}
@@ -721,7 +725,7 @@ const SensorListPage = () => {
 
           {/* Pagination */}
           {!isLoading && filteredSensors.length > 0 && totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
               <Pagination
                 count={totalPages}
                 page={page}
@@ -816,16 +820,15 @@ const SensorListPage = () => {
 
 const getSensorTypeColor = (type) => {
   const colorMap = {
-    TempA: "#ff5722",
-    TempB: "#ff9800",
-    TempC: "#ffc107",
-    pH: "#8bc34a",
+    TempA: "#f44336",
+    TempB: "#ff5722",
+    TempC: "#ff9800",
     DO: "#4caf50",
-    Saltlinity: "#03a9f4",
-    NHx: "#f44336",
-    EC: "#9c27b0",
-    TDS: "#00bcd4",
-    ORP: "#673ab7",
+    Salinity: "#03a9f4",
+    pH: "#8bc34a",
+    Ammonia: "#9c27b0",
+    Turbidity: "#0A5EB0",
+    NO2: "#673ab7",
   };
 
   return colorMap[type] || "#757575";
