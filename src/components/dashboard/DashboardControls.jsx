@@ -1,23 +1,25 @@
 /* eslint-disable no-unused-vars */
-import { 
-  Box, 
-  Typography, 
-  Button, 
+import {
+  Box,
+  Typography,
+  Button,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Stack,
   Chip,
-  useTheme 
+  useTheme,
 } from "@mui/material";
 
-const DashboardControls = ({ 
-  farms, 
-  selectedFarmId, 
-  timeRange, 
-  onFarmChange, 
-  onTimeRangeChange 
+const DashboardControls = ({
+  farms,
+  selectedFarmId,
+  timeRange,
+  onFarmChange,
+  onTimeRangeChange,
+  onRefresh,
+  isLoading,
 }) => {
   const theme = useTheme();
 
@@ -40,9 +42,9 @@ const DashboardControls = ({
       }}
     >
       {/* Farm Selection - Modernized */}
-      <FormControl 
-        sx={{ 
-          minWidth: 200, 
+      <FormControl
+        sx={{
+          minWidth: 200,
           maxWidth: { xs: "100%", sm: 300 },
         }}
       >
@@ -55,10 +57,10 @@ const DashboardControls = ({
           displayEmpty
           renderValue={(selected) => {
             if (!selected) return null;
-            const farm = farms.find(f => f.id === selected);
+            const farm = farms.find((f) => f.id === selected);
             return farm ? farm.name : "";
           }}
-          sx={{ borderRadius: 1 , height: "40px"}}
+          sx={{ borderRadius: 1, height: "40px" }}
         >
           {farms.map((farm) => (
             <MenuItem key={farm.id} value={farm.id}>
@@ -68,9 +70,8 @@ const DashboardControls = ({
         </Select>
       </FormControl>
 
-      {/* Time Range Selection - Modernized */}
+      {/* Time Range Selection and Refresh Button */}
       <Stack direction="row" spacing={1} alignItems="center">
-    
         {timeRangeButtons.map((button) => (
           <Button
             key={button.value}
@@ -87,6 +88,22 @@ const DashboardControls = ({
             {button.label}
           </Button>
         ))}
+
+        {/* Refresh Button */}
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={onRefresh}
+          disabled={isLoading}
+          sx={{
+            minWidth: "100px",
+            borderRadius: 1,
+            textTransform: "none",
+            ml: 1,
+          }}
+        >
+          {isLoading ? "Refreshing..." : "Refresh"}
+        </Button>
       </Stack>
     </Box>
   );

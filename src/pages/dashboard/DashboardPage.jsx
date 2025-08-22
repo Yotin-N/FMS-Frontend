@@ -44,7 +44,6 @@ import SettingsPage from "../settings/SettingsPage";
 
 // Dashboard components
 import DashboardControls from "../../components/dashboard/DashboardControls";
-import LatestTimestampCard from "../../components/dashboard/LatestTimestampCard";
 import AverageValueCardsGrid from "../../components/dashboard/AverageValueCardsGrid";
 import ActiveSensorsCard from "../../components/dashboard/ActiveSensorsCard";
 import SensorChartsSection from "../../components/dashboard/SensorChartsSection";
@@ -52,10 +51,8 @@ import SensorChartsSection from "../../components/dashboard/SensorChartsSection"
 const drawerWidth = 240;
 
 const DashboardContent = () => {
-  const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const queryParams = new URLSearchParams(location.search);
   const initialFarmId = queryParams.get("farmId");
@@ -67,10 +64,10 @@ const DashboardContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState("24");
-  const [selectedTab, setSelectedTab] = useState(0);
   // State for controlling gauge display (new addition)
   const [showAllGauges, setShowAllGauges] = useState(false);
   const [visibleSensors, setVisibleSensors] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Make sure we have fallback data if real data is empty
   useEffect(() => {
@@ -85,8 +82,33 @@ const DashboardContent = () => {
   }, [selectedFarmId, chartData, isLoading]);
 
   useEffect(() => {
-    loadFarms();
-  }, []);
+    const loadFarmsData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await getFarms();
+        const farmsData = response.data || [];
+        setFarms(farmsData);
+        if (
+          initialFarmId &&
+          farmsData.some((farm) => farm.id === initialFarmId)
+        ) {
+          setSelectedFarmId(initialFarmId);
+        } else if (farmsData.length > 0 && !initialFarmId) {
+          setSelectedFarmId(farmsData[0].id);
+          navigate(`/dashboard?farmId=${farmsData[0].id}`, { replace: true });
+        } else {
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error("Error loading farms:", err);
+        setError("Failed to load farms. Please try again.");
+        setIsLoading(false);
+      }
+    };
+    
+    loadFarmsData();
+  }, [initialFarmId, navigate]);
 
   useEffect(() => {
     console.log("DashboardContent - visibleSensors:", visibleSensors);
@@ -114,13 +136,46 @@ const DashboardContent = () => {
 
   useEffect(() => {
     if (selectedFarmId) {
-      loadDashboardData();
-      loadChartData();
+      const loadData = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const data = await getDashboardSummary(selectedFarmId);
+          setDashboardData(data);
+        } catch (err) {
+          console.error("Error loading dashboard data:", err);
+          setError("Failed to load dashboard data. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadData();
     } else {
       setDashboardData(null);
       setChartData([]);
     }
-  }, [selectedFarmId, timeRange]);
+  }, [selectedFarmId, refreshTrigger]);
+
+  // Load chart data when timeRange changes
+  useEffect(() => {
+    if (selectedFarmId && dashboardData) {
+      const loadData = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const data = await getSensorChartData(selectedFarmId, timeRange);
+          setChartData(data || []);
+        } catch (err) {
+          console.error("Error loading chart data:", err);
+          setError("Failed to load chart data. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      loadData();
+    }
+  }, [selectedFarmId, timeRange, dashboardData, refreshTrigger]);
 
   useEffect(() => {
     console.log("DashboardContent - dashboardData:", dashboardData);
@@ -140,30 +195,6 @@ const DashboardContent = () => {
     }
   }, [dashboardData, visibleSensors]);
 
-  const loadFarms = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await getFarms();
-      const farmsData = response.data || [];
-      setFarms(farmsData);
-      if (
-        initialFarmId &&
-        farmsData.some((farm) => farm.id === initialFarmId)
-      ) {
-        setSelectedFarmId(initialFarmId);
-      } else if (farmsData.length > 0 && !initialFarmId) {
-        setSelectedFarmId(farmsData[0].id);
-        navigate(`/dashboard?farmId=${farmsData[0].id}`, { replace: true });
-      } else {
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error("Error loading farms:", err);
-      setError("Failed to load farms. Please try again.");
-      setIsLoading(false);
-    }
-  };
 
   const handleToggleSensor = (sensorType) => {
     setVisibleSensors((prev) => {
@@ -180,19 +211,6 @@ const DashboardContent = () => {
     setShowAllGauges((prev) => !prev);
   };
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getDashboardSummary(selectedFarmId);
-      setDashboardData(data);
-    } catch (err) {
-      console.error("Error loading dashboard data:", err);
-      setError("Failed to load dashboard data. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSensorConfigClick = (sensorType) => {
     console.log(`Config clicked for sensor: ${sensorType}`);
@@ -201,19 +219,6 @@ const DashboardContent = () => {
     );
   };
 
-  const loadChartData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getSensorChartData(selectedFarmId, timeRange);
-      setChartData(data);
-    } catch (err) {
-      console.error("Error loading chart data:", err);
-      setError("Failed to load chart data. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleFarmChange = (event) => {
     const farmId = event.target.value;
@@ -230,8 +235,7 @@ const DashboardContent = () => {
   };
 
   const handleRefresh = () => {
-    loadDashboardData();
-    loadChartData();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -250,6 +254,8 @@ const DashboardContent = () => {
           timeRange={timeRange}
           onFarmChange={handleFarmChange}
           onTimeRangeChange={handleTimeRangeChange}
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
         />
       )}
 
@@ -278,42 +284,48 @@ const DashboardContent = () => {
 
       {selectedFarmId && (
         <Box sx={{ width: "100%" }}>
+          {/* Reorganized Layout */}
           <Box
             sx={{
               display: "flex",
-              width: "100%",
-              flexDirection: { xs: "column", md: "row" },
+              flexDirection: "column",
               gap: 3,
-              // KEEP ORIGINAL: Fixed height for dashboard
               height: { md: "calc(100vh - 180px)" },
             }}
           >
-            {/* Left sidebar with cards - UPDATED: Removed NotificationsCard */}
+            {/* Sensor Overview Gauges */}
             <Box
               sx={{
-                width: { xs: "100%", md: "25%" },
-                minWidth: { md: "250px" },
-                maxWidth: { md: "350px" },
-                order: { xs: 2, md: 1 },
-                display: "flex",
-                flexDirection: "column",
-                height: { md: "100%" },
+                minHeight: "200px",
               }}
             >
-              {/* Date Time Card */}
-              <LatestTimestampCard
-                timestamp={dashboardData?.latestTimestamp}
-                onRefresh={handleRefresh}
-                isLoading={isLoading}
+              <AverageValueCardsGrid
+                sensorData={dashboardData?.averages}
+                visibleSensors={visibleSensors}
+                showAllGauges={showAllGauges}
+                onSensorConfigClick={handleSensorConfigClick}
+                compact={false} // Keep original size
               />
+            </Box>
 
-              {/* Active Sensors Card - Make it fill remaining space */}
+            {/* Main Content Section */}
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                gap: 3,
+                flexDirection: { xs: "column", md: "row" },
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
+              {/* Left Section: Active Sensors Selection */}
               <Box
                 sx={{
-                  flex: 1,
+                  width: { xs: "100%", md: "280px" },
+                  flexShrink: 0,
                   display: "flex",
                   flexDirection: "column",
-                  overflow: "hidden",
                 }}
               >
                 <ActiveSensorsCard
@@ -324,58 +336,18 @@ const DashboardContent = () => {
                   onToggleShowAllGauges={handleToggleShowAllGauges}
                 />
               </Box>
-            </Box>
 
-            {/* Container for sensor values and charts */}
-            <Box
-              sx={{
-                flex: 1,
-                width: { xs: "100%", md: "75%" },
-                order: { xs: 1, md: 2 },
-                display: "flex",
-                flexDirection: "column",
-                height: { md: "100%" },
-                overflow: "hidden", // Prevent overflow
-              }}
-            >
-              {/* Sensor Values Cards */}
-              <AverageValueCardsGrid
-                sensorData={dashboardData?.averages}
-                visibleSensors={visibleSensors}
-                showAllGauges={showAllGauges}
-                onSensorConfigClick={handleSensorConfigClick}
-              />
-
-              {/* Charts Section - Make it fill remaining space */}
+              {/* Right Section: Charts */}
               <Box
                 sx={{
                   flex: 1,
-                  display: "flex", // Add this
-                  flexDirection: "column", // Add this
-                  minHeight: 0, // Critical for flex child to respect parent boundaries
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  // Custom scrollbar styling
-                  scrollbarWidth: "thin",
-                  scrollbarColor: `${theme.palette.grey[400]} ${theme.palette.grey[100]}`,
-                  "&::-webkit-scrollbar": {
-                    width: "8px",
-                  },
-                  "&::-webkit-scrollbar-track": {
-                    background: theme.palette.grey[100],
-                    borderRadius: "4px",
-                  },
-                  "&::-webkit-scrollbar-thumb": {
-                    background: theme.palette.grey[400],
-                    borderRadius: "4px",
-                  },
-                  "&::-webkit-scrollbar-thumb:hover": {
-                    background: theme.palette.grey[500],
-                  },
-                  // Smooth scrolling
-                  scrollBehavior: "smooth",
-                  // Add padding for better visual spacing
-                  pr: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  borderRadius: 2,
+                  bgcolor: "background.paper",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
                 <SensorChartsSection
@@ -384,7 +356,7 @@ const DashboardContent = () => {
                   isLoading={isLoading}
                   visibleSensors={visibleSensors}
                   timeRange={timeRange}
-                  sx={{ flex: 1 }} // Make it fill the container
+                  enhanced={true}
                 />
               </Box>
             </Box>

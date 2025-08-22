@@ -8,6 +8,7 @@ import {
   Grid,
   Paper,
   Divider,
+  Tooltip,
 } from "@mui/material";
 import {
   WarningAmber as WarningAmberIcon,
@@ -19,6 +20,8 @@ const AverageValueCardsGrid = ({
   sensorData,
   visibleSensors,
   showAllGauges = false,
+  compact = false, // New prop for compact layout
+  onSensorConfigClick,
 }) => {
   const theme = useTheme();
   const [popoverAnchor, setPopoverAnchor] = React.useState(null);
@@ -47,8 +50,9 @@ const AverageValueCardsGrid = ({
     minValue,
     maxValue,
   }) => {
-    const circleSize = 140;
-    const strokeWidth = 12;
+    // Dynamic sizing based on layout mode
+    const circleSize = compact ? 100 : 140;
+    const strokeWidth = compact ? 8 : 12;
     const radius = (circleSize - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const startAngle = -225;
@@ -138,6 +142,71 @@ const AverageValueCardsGrid = ({
       }
     };
 
+    // Create detailed tooltip content
+    const createTooltipContent = () => {
+      const currentValue = value !== null && value !== undefined ? Number(value).toFixed(2) : "N/A";
+      
+      return (
+        <Box sx={{ p: 1, maxWidth: 250 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: gaugeColor }}>
+            {type} Sensor Details
+          </Typography>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="body2">
+              <strong>Current:</strong>
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: gaugeColor }}>
+              {currentValue} {unit || ''}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="body2">
+              <strong>Status:</strong>
+            </Typography>
+            <Box component="span" sx={{ 
+              px: 1, 
+              py: 0.2, 
+              borderRadius: 1, 
+              bgcolor: severityColor || theme.palette.grey[300],
+              color: 'white',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              textTransform: 'capitalize'
+            }}>
+              {severity === 'normal' || severity === 'green' ? 'Normal' : 
+               severity === 'warning' ? 'Warning' : 
+               severity === 'critical' || severity === 'error' ? 'Critical' : 
+               'Unknown'}
+            </Box>
+          </Box>
+          
+          {gaugeMin !== undefined && gaugeMax !== undefined && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2">
+                <strong>Range:</strong>
+              </Typography>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                {gaugeMin.toFixed(1)} - {gaugeMax.toFixed(1)} {unit || ''}
+              </Typography>
+            </Box>
+          )}
+          
+          {displaySuggestion && severity !== 'normal' && severity !== 'green' && (
+            <Box sx={{ mt: 1.5, pt: 1, borderTop: `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5, color: theme.palette.warning.main }}>
+                ⚠️ Recommendation
+              </Typography>
+              <Typography variant="caption" sx={{ fontStyle: 'italic', color: theme.palette.text.secondary, lineHeight: 1.4 }}>
+                {displaySuggestion}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      );
+    };
+
     return (
       <Box
         sx={{
@@ -176,17 +245,73 @@ const AverageValueCardsGrid = ({
           </IconButton>
         )}
 
-        <Box
-          sx={{
-            position: "relative",
-            width: circleSize,
-            height: circleSize,
-            margin: "0 auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+        {/* Wrap the entire gauge in a tooltip */}
+        <Tooltip
+          title={createTooltipContent()}
+          arrow
+          placement="top"
+          enterDelay={500}
+          leaveDelay={200}
+          slotProps={{
+            tooltip: {
+              sx: {
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                p: 0, // Remove default padding since we're adding it in the content
+                maxWidth: 300,
+              },
+            },
+            arrow: {
+              sx: {
+                color: 'rgba(255, 255, 255, 0.95)',
+                '&:before': {
+                  border: `1px solid ${theme.palette.divider}`,
+                },
+              },
+            },
           }}
         >
+          <Box
+            className="gauge-container"
+            sx={{
+              position: "relative",
+              width: circleSize,
+              height: circleSize,
+              margin: "0 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "help", // Show help cursor on hover
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                transform: compact ? "scale(1.02)" : "scale(1.05)",
+                filter: "brightness(1.05)",
+              },
+              "&::after": {
+                content: '""',
+                position: "absolute",
+                bottom: -2,
+                right: -2,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: theme.palette.primary.main,
+                opacity: 0.8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '8px',
+                color: 'white',
+                transition: 'opacity 0.2s ease-in-out',
+              },
+              "&:hover::after": {
+                opacity: 1,
+              },
+            }}
+          >
           {/* Background arc */}
           <svg
             width={circleSize}
@@ -242,19 +367,19 @@ const AverageValueCardsGrid = ({
             }}
           >
             <Typography
-              variant="h6"
+              variant={compact ? "subtitle2" : "h6"}
               component="div"
               sx={{
                 fontWeight: 600,
-                fontSize: "1.1rem",
+                fontSize: compact ? "0.9rem" : "1.1rem",
                 color: theme.palette.text.primary,
-                mb: 0.5,
+                mb: compact ? 0.2 : 0.5,
               }}
             >
               {type}
             </Typography>
             <Typography
-              variant="h5"
+              variant={compact ? "h6" : "h5"}
               component="div"
               sx={{
                 fontWeight: 700,
@@ -263,7 +388,7 @@ const AverageValueCardsGrid = ({
                     ? theme.palette.text.disabled
                     : gaugeColor,
                 lineHeight: 1,
-                fontSize: "1.8rem",
+                fontSize: compact ? "1.2rem" : "1.8rem",
               }}
             >
               {displayValue}
@@ -275,7 +400,7 @@ const AverageValueCardsGrid = ({
                 sx={{
                   color: theme.palette.text.secondary,
                   fontWeight: 500,
-                  fontSize: "0.8rem",
+                  fontSize: compact ? "0.7rem" : "0.8rem",
                 }}
               >
                 {unit}
@@ -283,6 +408,7 @@ const AverageValueCardsGrid = ({
             )}
           </Box>
         </Box>
+        </Tooltip>
       </Box>
     );
   };
@@ -306,12 +432,24 @@ const AverageValueCardsGrid = ({
 
   if (sensors.length === 0) {
     return (
-      <Box sx={{ width: "100%", mb: 4 }}>
+      <Box sx={{ 
+        width: "100%", 
+        mb: compact ? 0 : 4,
+        p: compact ? 2 : 0,
+        bgcolor: compact ? "background.paper" : "transparent",
+        borderRadius: compact ? 2 : 0,
+        boxShadow: compact ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+      }}>
+        {compact && (
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2 }}>
+            Sensor Overview
+          </Typography>
+        )}
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Box
               sx={{
-                p: 4,
+                p: compact ? 3 : 4,
                 textAlign: "center",
                 bgcolor: theme.palette.grey[100],
                 borderRadius: 2,
@@ -329,10 +467,53 @@ const AverageValueCardsGrid = ({
     );
   }
 
+  // Get grid configuration based on layout mode
+  const getGridConfig = () => {
+    if (compact) {
+      return {
+        xs: 6,   // 2 per row on mobile
+        sm: 4,   // 3 per row on small tablets
+        md: 3,   // 4 per row on tablets
+        lg: 2.4, // 5 per row on laptops
+        xl: 2,   // 6 per row on desktop
+      };
+    }
+    return {
+      xs: 6,   // 2 per row on mobile
+      sm: 4,   // 3 per row on small tablets
+      md: 3,   // 4 per row on tablets
+      lg: 2.4, // 5 per row on laptops
+      xl: 1.7, // 7 per row on large desktop
+    };
+  };
+
+  const gridConfig = getGridConfig();
+
   return (
-    <Box sx={{ width: "100%", mb: 4 }}>
-      {/* Display count indicator */}
-      {sensors.length > 4 && (
+    <Box 
+      sx={{ 
+        width: "100%", 
+        mb: compact ? 0 : 4,
+        p: compact ? 2 : 0,
+        bgcolor: compact ? "background.paper" : "transparent",
+        borderRadius: compact ? 2 : 0,
+        boxShadow: compact ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+      }}
+    >
+      {/* Header for compact mode */}
+      {compact && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
+            Sensor Overview
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Current readings from {displayedSensors.length} active sensors
+          </Typography>
+        </Box>
+      )}
+
+      {/* Display count indicator for non-compact mode */}
+      {!compact && sensors.length > 4 && (
         <Box
           sx={{
             mb: 2,
@@ -352,7 +533,7 @@ const AverageValueCardsGrid = ({
         </Box>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={compact ? 2 : 3}>
         {displayedSensors.map(([type, data]) => {
           const currentValue =
             data.latestValue !== null && data.latestValue !== undefined
@@ -362,47 +543,59 @@ const AverageValueCardsGrid = ({
           return (
             <Grid
               item
-              xs={6} // 2 per row on extra small screens
-              sm={4} // 3 per row on small screens
-              md={2.4} // ✅ FIX: 5 per row on medium screens (15" laptop)
-              lg={2} // 6 per row on large screens
-              xl={1.7} // ✅ FIX: 7 per row on extra large screens (27" monitor)
+              xs={gridConfig.xs}
+              sm={gridConfig.sm}
+              md={gridConfig.md}
+              lg={gridConfig.lg}
+              xl={gridConfig.xl}
               key={type}
             >
-              <GaugeCircle
-                type={type}
-                value={currentValue}
-                unit={data.unit}
-                severity={data.severity}
-                severityColor={data.severityColor}
-                severityLabel={data.severityLabel}
-                suggestion={data.suggestion}
-                thresholdRanges={data.thresholdRanges}
-                minValue={data.gaugeMin}
-                maxValue={data.gaugeMax}
-              />
+              <Box
+                sx={{
+                  position: "relative",
+                  cursor: compact && onSensorConfigClick ? "pointer" : "default",
+                  transition: "transform 0.2s ease-in-out",
+                  "&:hover": compact && onSensorConfigClick ? {
+                    transform: "translateY(-2px)",
+                  } : {},
+                }}
+                onClick={compact && onSensorConfigClick ? () => onSensorConfigClick(type) : undefined}
+              >
+                <GaugeCircle
+                  type={type}
+                  value={currentValue}
+                  unit={data.unit}
+                  severity={data.severity}
+                  severityColor={data.severityColor}
+                  severityLabel={data.severityLabel}
+                  suggestion={data.suggestion}
+                  thresholdRanges={data.thresholdRanges}
+                  minValue={data.gaugeMin}
+                  maxValue={data.gaugeMax}
+                />
+              </Box>
             </Grid>
           );
         })}
       </Grid>
 
-      {/* Enhanced Popover for suggestion messages - TOP CENTER OF SCREEN */}
+      {/* Enhanced Popover for suggestion messages */}
       <Popover
         open={Boolean(popoverAnchor)}
-        anchorEl={null}
+        anchorEl={compact ? null : popoverAnchor}
         onClose={handlePopoverClose}
         anchorOrigin={{
-          vertical: "top",
+          vertical: compact ? "top" : "bottom",
           horizontal: "center",
         }}
         transformOrigin={{
-          vertical: "top",
+          vertical: compact ? "top" : "top",
           horizontal: "center",
         }}
         sx={{
-          "& .MuiPopover-paper": {
+          "& .MuiPopover-paper": compact ? {
             position: "fixed",
-            top: "20px",
+            top: "80px",
             left: "50%",
             transform: "translateX(-50%)",
             maxWidth: 320,
@@ -411,6 +604,14 @@ const AverageValueCardsGrid = ({
             boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
             border: `1px solid ${theme.palette.divider}`,
             zIndex: 1300,
+          } : {
+            maxWidth: 320,
+            "& .MuiPaper-root": {
+              p: 2,
+              borderRadius: 2,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+              border: `1px solid ${theme.palette.divider}`,
+            },
           },
         }}
       >

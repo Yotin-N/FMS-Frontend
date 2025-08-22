@@ -28,7 +28,27 @@ export const getSensorChartData = async (
   sensorType = null
 ) => {
   try {
-    const params = { timeRange };
+    // Determine granularity based on time range
+    const getGranularityMinutes = (hours) => {
+      const range = Number(hours);
+
+      if (range <= 1) {
+        return 1;
+      } else if (range <= 6) {
+        return 5;
+      } else if (range <= 24) {
+        return 15;
+      } else {
+        return 1440; // 1440 นาที = 24 ชั่วโมง * 60 นาที
+      }
+    };
+
+    const granularityMinutes = getGranularityMinutes(timeRange);
+    const params = {
+      timeRange,
+      granularityMinutes,
+    };
+
     if (sensorType) {
       params.sensorType = sensorType;
     }
@@ -36,6 +56,21 @@ export const getSensorChartData = async (
     const response = await api.get(`/dashboard/farm/${farmId}/sensor-data`, {
       params,
     });
+
+    // Log data points for debugging
+    if (timeRange <= 1 && response.data) {
+      console.log(
+        `📊 Fetching ${timeRange}h data with ${granularityMinutes}min granularity`
+      );
+      response.data.forEach((sensorData) => {
+        if (sensorData && sensorData.data) {
+          console.log(
+            `📈 ${sensorData.type}: ${sensorData.data.length} data points`
+          );
+        }
+      });
+    }
+
     return response.data;
   } catch (error) {
     console.error(`Error getting sensor chart data for farm ${farmId}:`, error);
@@ -59,21 +94,19 @@ export const getSensorRealtimeData = async (
 ) => {
   try {
     // Format dates if they are Date objects
-    const startDateStr = typeof startDate === 'object' 
-      ? startDate.toISOString() 
-      : startDate;
-    
-    const endDateStr = typeof endDate === 'object'
-      ? endDate.toISOString()
-      : endDate;
+    const startDateStr =
+      typeof startDate === "object" ? startDate.toISOString() : startDate;
+
+    const endDateStr =
+      typeof endDate === "object" ? endDate.toISOString() : endDate;
 
     const response = await api.get(
       `/dashboard/farm/${farmId}/sensor/${sensorType}/realtime-data`,
       {
         params: {
           startDate: startDateStr,
-          endDate: endDateStr
-        }
+          endDate: endDateStr,
+        },
       }
     );
     return response.data;
@@ -89,5 +122,5 @@ export const getSensorRealtimeData = async (
 export default {
   getDashboardSummary,
   getSensorChartData,
-  getSensorRealtimeData
+  getSensorRealtimeData,
 };
