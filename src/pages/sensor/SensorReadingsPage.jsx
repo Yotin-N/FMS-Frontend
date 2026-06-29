@@ -41,6 +41,7 @@ import {
 } from "../../services/sensorApi";
 import { format, parseISO } from "date-fns";
 import useAuth from "../../hooks/useAuth";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 const SensorReadingsPage = () => {
   const theme = useTheme();
@@ -54,6 +55,7 @@ const SensorReadingsPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [newReading, setNewReading] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [stats, setStats] = useState({
     min: 0,
     max: 0,
@@ -94,22 +96,34 @@ const SensorReadingsPage = () => {
   };
 
   const onRefresh = () => {
-    loadReadings(); 
+    loadReadings();
   };
 
   // Load sensor readings
-  const loadReadings = async () => {
-    setIsLoading(true);
+  const loadReadings = async ({ background = false } = {}) => {
+    if (!background) {
+      setIsLoading(true);
+    }
+
     try {
       const response = await getSensorReadings(id);
       setReadings(response.data || []);
+      setLastUpdatedAt(new Date());
     } catch (err) {
       console.error("Error loading readings:", err);
       setError("Failed to load sensor readings");
     } finally {
-      setIsLoading(false);
+      if (!background) {
+        setIsLoading(false);
+      }
     }
   };
+
+  useAutoRefresh({
+    callback: () => loadReadings({ background: true }),
+    enabled: Boolean(id),
+    intervalMs: 3000,
+  });
 
   // Calculate statistics from readings
   const calculateStats = () => {
@@ -220,6 +234,33 @@ const SensorReadingsPage = () => {
             ? `${sensor.name} Readings`
             : "Sensor Readings"}
         </Typography>
+        <Box sx={{ ml: "auto", display: "flex", gap: 1, alignItems: "center" }}>
+          <Chip
+            size="small"
+            color="success"
+            variant="outlined"
+            label="Live 3s"
+            sx={{ fontWeight: 500 }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {lastUpdatedAt
+              ? `Updated ${lastUpdatedAt.toLocaleTimeString()}`
+              : "Waiting for data"}
+          </Typography>
+          <Tooltip title="Refresh now">
+            <IconButton
+              color="primary"
+              onClick={onRefresh}
+              disabled={isLoading}
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
   
       {/* Loading Indicator and Alerts here */}

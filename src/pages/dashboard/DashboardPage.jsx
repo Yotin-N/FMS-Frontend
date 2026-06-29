@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -41,6 +40,7 @@ import UserListPage from "../user/UserListPage";
 import CreateUserPage from "../user/CreateUserPage";
 import EditUserPage from "../user/EditUserPage";
 import SettingsPage from "../settings/SettingsPage";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 // Dashboard components
 import DashboardControls from "../../components/dashboard/DashboardControls";
@@ -67,7 +67,13 @@ const DashboardContent = () => {
   // State for controlling gauge display (new addition)
   const [showAllGauges, setShowAllGauges] = useState(false);
   const [visibleSensors, setVisibleSensors] = useState([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshRequest, setRefreshRequest] = useState({
+    tick: 0,
+    background: false,
+  });
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [hasInitializedVisibleSensors, setHasInitializedVisibleSensors] =
+    useState(false);
 
   // Make sure we have fallback data if real data is empty
   useEffect(() => {
@@ -111,42 +117,44 @@ const DashboardContent = () => {
   }, [initialFarmId, navigate]);
 
   useEffect(() => {
-    console.log("DashboardContent - visibleSensors:", visibleSensors);
-  }, [visibleSensors]);
+    const preserveVisibleSensors = (availableTypes) => {
+      setVisibleSensors((previousTypes) => {
+        if (!hasInitializedVisibleSensors) {
+          return availableTypes;
+        }
 
-  useEffect(() => {
-    console.log("DashboardContent - dashboardData:", dashboardData);
+        return previousTypes.filter((type) =>
+          availableTypes.includes(type)
+        );
+      });
+      setHasInitializedVisibleSensors(true);
+    };
 
     if (dashboardData && dashboardData.averages) {
-      const sensorTypes = Object.keys(dashboardData.averages);
-      console.log(
-        "DashboardContent - Setting visibleSensors from dashboardData:",
-        sensorTypes
-      );
-      setVisibleSensors(sensorTypes);
+      preserveVisibleSensors(Object.keys(dashboardData.averages));
     } else if (chartData && chartData.length > 0) {
-      const chartTypes = chartData.map((chart) => chart.type);
-      console.log(
-        "DashboardContent - Setting visibleSensors from chartData:",
-        chartTypes
-      );
-      setVisibleSensors(chartTypes);
+      preserveVisibleSensors(chartData.map((chart) => chart.type));
     }
-  }, [dashboardData, chartData]);
+  }, [dashboardData, chartData, hasInitializedVisibleSensors]);
 
   useEffect(() => {
     if (selectedFarmId) {
       const loadData = async () => {
-        setIsLoading(true);
+        if (!refreshRequest.background) {
+          setIsLoading(true);
+        }
         setError(null);
         try {
           const data = await getDashboardSummary(selectedFarmId);
           setDashboardData(data);
+          setLastUpdatedAt(new Date());
         } catch (err) {
           console.error("Error loading dashboard data:", err);
           setError("Failed to load dashboard data. Please try again.");
         } finally {
-          setIsLoading(false);
+          if (!refreshRequest.background) {
+            setIsLoading(false);
+          }
         }
       };
       loadData();
@@ -154,13 +162,15 @@ const DashboardContent = () => {
       setDashboardData(null);
       setChartData([]);
     }
-  }, [selectedFarmId, refreshTrigger]);
+  }, [selectedFarmId, refreshRequest]);
 
-  // Load chart data when timeRange changes
+  // Load chart data when timeRange changes or refreshes
   useEffect(() => {
-    if (selectedFarmId && dashboardData) {
+    if (selectedFarmId) {
       const loadData = async () => {
-        setIsLoading(true);
+        if (!refreshRequest.background) {
+          setIsLoading(true);
+        }
         setError(null);
         try {
           const data = await getSensorChartData(selectedFarmId, timeRange);
@@ -169,31 +179,15 @@ const DashboardContent = () => {
           console.error("Error loading chart data:", err);
           setError("Failed to load chart data. Please try again.");
         } finally {
-          setIsLoading(false);
+          if (!refreshRequest.background) {
+            setIsLoading(false);
+          }
         }
       };
       
       loadData();
     }
-  }, [selectedFarmId, timeRange, dashboardData, refreshTrigger]);
-
-  useEffect(() => {
-    console.log("DashboardContent - dashboardData:", dashboardData);
-    console.log("DashboardContent - visibleSensors:", visibleSensors);
-
-    if (dashboardData && dashboardData.averages) {
-      Object.entries(dashboardData.averages).forEach(([type, data]) => {
-        console.log(`Sensor ${type} data:`, {
-          latestValue: data.latestValue,
-          gaugeMin: data.gaugeMin,
-          gaugeMax: data.gaugeMax,
-          severityColor: data.severityColor,
-          thresholdRanges: data.thresholdRanges,
-          unit: data.unit,
-        });
-      });
-    }
-  }, [dashboardData, visibleSensors]);
+  }, [selectedFarmId, timeRange, refreshRequest]);
 
 
   const handleToggleSensor = (sensorType) => {
@@ -213,7 +207,6 @@ const DashboardContent = () => {
 
 
   const handleSensorConfigClick = (sensorType) => {
-    console.log(`Config clicked for sensor: ${sensorType}`);
     navigate(
       `/dashboard/settings?farmId=${selectedFarmId}&sensorType=${sensorType}`
     );
@@ -223,6 +216,8 @@ const DashboardContent = () => {
   const handleFarmChange = (event) => {
     const farmId = event.target.value;
     setSelectedFarmId(farmId);
+    setVisibleSensors([]);
+    setHasInitializedVisibleSensors(false);
     if (farmId) {
       navigate(`/dashboard?farmId=${farmId}`, { replace: true });
     } else {
@@ -234,9 +229,22 @@ const DashboardContent = () => {
     setTimeRange(range);
   };
 
-  const handleRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
+  const requestRefresh = (background = false) => {
+    setRefreshRequest((previous) => ({
+      tick: previous.tick + 1,
+      background,
+    }));
   };
+
+  const handleRefresh = () => {
+    requestRefresh(false);
+  };
+
+  useAutoRefresh({
+    callback: () => requestRefresh(true),
+    enabled: Boolean(selectedFarmId),
+    intervalMs: 5000,
+  });
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -256,6 +264,8 @@ const DashboardContent = () => {
           onTimeRangeChange={handleTimeRangeChange}
           onRefresh={handleRefresh}
           isLoading={isLoading}
+          lastUpdatedAt={lastUpdatedAt}
+          autoRefreshIntervalMs={5000}
         />
       )}
 

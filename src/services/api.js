@@ -153,9 +153,6 @@ export const getFarms = async () => {
       farms = []; // Fallback to empty array if unexpected structure
     }
 
-    // For debugging, log the actual structure
-    console.log("API Farm Response:", response.data);
-
     // Ensure we have placeholders for any missing data to prevent UI errors
     const processedFarms = farms.map((farm) => ({
       ...farm,

@@ -57,20 +57,6 @@ export const getSensorChartData = async (
       params,
     });
 
-    // Log data points for debugging
-    if (timeRange <= 1 && response.data) {
-      console.log(
-        `📊 Fetching ${timeRange}h data with ${granularityMinutes}min granularity`
-      );
-      response.data.forEach((sensorData) => {
-        if (sensorData && sensorData.data) {
-          console.log(
-            `📈 ${sensorData.type}: ${sensorData.data.length} data points`
-          );
-        }
-      });
-    }
-
     return response.data;
   } catch (error) {
     console.error(`Error getting sensor chart data for farm ${farmId}:`, error);

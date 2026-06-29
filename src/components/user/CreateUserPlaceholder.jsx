@@ -57,8 +57,6 @@ const CreateUserPlaceholder = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    console.log("Creating user:", formData);
-
     // In a real app, would send data to API
 
     // Then redirect on success

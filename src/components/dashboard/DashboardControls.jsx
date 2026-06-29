@@ -20,6 +20,8 @@ const DashboardControls = ({
   onTimeRangeChange,
   onRefresh,
   isLoading,
+  lastUpdatedAt,
+  autoRefreshIntervalMs,
 }) => {
   const theme = useTheme();
 
@@ -29,6 +31,10 @@ const DashboardControls = ({
     { label: "7d", value: "168" },
     { label: "30d", value: "720" },
   ];
+  const refreshSeconds = Math.round((autoRefreshIntervalMs || 0) / 1000);
+  const lastUpdatedLabel = lastUpdatedAt
+    ? `Updated ${lastUpdatedAt.toLocaleTimeString()}`
+    : "Waiting for data";
 
   return (
     <Box
@@ -72,6 +78,17 @@ const DashboardControls = ({
 
       {/* Time Range Selection and Refresh Button */}
       <Stack direction="row" spacing={1} alignItems="center">
+        <Chip
+          size="small"
+          color="success"
+          variant="outlined"
+          label={`Live ${refreshSeconds}s`}
+          sx={{ fontWeight: 500 }}
+        />
+        <Typography variant="caption" color="text.secondary">
+          {lastUpdatedLabel}
+        </Typography>
+
         {timeRangeButtons.map((button) => (
           <Button
             key={button.value}

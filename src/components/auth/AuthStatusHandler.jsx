@@ -23,20 +23,6 @@ const AuthStatusHandler = () => {
             }
         }
     
-      
-        const checkAuthState = async () => {
-            try {
-              
-            } catch (error) {
-                if (error?.response?.status === 401 && isAuthenticated) {
-                    logout();
-                    navigate('/login', {state: {error: "Session expired"}});
-                }
-            }
-        };
-        
-  
-        checkAuthState();
     }, [isAuthenticated, logout, navigate]);
 
     const handleClose = () => {

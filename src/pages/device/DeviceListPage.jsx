@@ -72,7 +72,7 @@ const DeviceListPage = () => {
 
   // Pagination state
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(100); // Using a large limit to get all devices
+  const [limit] = useState(100); // Using a large limit to get all devices
   const [totalPages, setTotalPages] = useState(1);
 
   // Dialog states

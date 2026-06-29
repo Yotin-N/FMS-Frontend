@@ -27,7 +27,7 @@ const SensorForm = ({
   const [formData, setFormData] = useState({
     name: "",
     serialNumber: "",
-    type: "PH",
+    type: "pH",
     unit: "",
     minValue: "",
     maxValue: "",
@@ -46,7 +46,7 @@ const SensorForm = ({
       setFormData({
         name: name || "",
         serialNumber: serialNumber || "",
-        type: type || "PH",
+        type: type || "pH",
         unit: unit || "",
         minValue: minValue !== undefined ? minValue : "",
         maxValue: maxValue !== undefined ? maxValue : "",
@@ -139,11 +139,13 @@ const SensorForm = ({
   // Get unit placeholder based on sensor type
   const getUnitPlaceholder = (type) => {
     const unitMap = {
-      PH: "pH",
-      TEMP: "°C",
+      pH: "pH",
+      TempA: "°C",
+      TempB: "°C",
+      TempC: "°C",
       Salinity: "ppt",
       DO: "mg/L",
-      AMMONIA: "PPM",
+      Ammonia: "PPM",
       NO2: "",
       Turbidity: "cm"
     };

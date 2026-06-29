@@ -54,16 +54,12 @@ const GoogleCallbackHandler = () => {
   useEffect(() => {
     const processCallback = async () => {
       setIsLoading(true);
-      console.log("Current URL:", window.location.href); // Add for debugging
       
       try {
         // Extract token from URL parameters
         const searchParams = new URLSearchParams(location.search);
         const token = searchParams.get("token");
         const userId = searchParams.get("userId");
-        
-        console.log("Token:", token); // Add for debugging
-        console.log("UserId:", userId); // Add for debugging
         
         if (!token) {
           throw new Error("No authentication token received");

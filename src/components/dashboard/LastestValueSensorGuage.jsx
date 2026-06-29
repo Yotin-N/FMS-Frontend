@@ -17,15 +17,6 @@ const LatestValueSensorGauge = ({
 }) => {
   const theme = useTheme();
 
-  // Debug logging
-  console.log(`LatestValueSensorGauge - ${type}:`, {
-    value,
-    minValue,
-    maxValue,
-    severityColor,
-    thresholdRanges,
-  });
-
   // Validate required props
   if (value === null || value === undefined) {
     console.warn(`No value provided for sensor ${type}`);
